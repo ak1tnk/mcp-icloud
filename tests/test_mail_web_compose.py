@@ -17,6 +17,7 @@ from pyicloud.services.mail.models import (
 
 from mcp_icloud.server import ApiProvider, build_server
 from mcp_icloud.services.mail import web_compose
+from mcp_icloud.services.mail.web import web_errors as REAL_WEB_ERRORS
 from mcp_icloud.session import NotLoggedInError
 
 
@@ -42,7 +43,7 @@ def mail(monkeypatch):
             "Message-ID: <original@example.com>\n"
         ),
         content_type="text/plain",
-        parts=[MailBodyPart(guid="original/1", content="old\ntext")],
+        parts=[MailBodyPart(guid="messagepart:Drafts/1-1", content="old\ntext")],
     )
     draft = SimpleNamespace(message=original)
     for name in ("create_draft", "create_reply_draft", "create_forward_draft"):
@@ -237,3 +238,13 @@ def test_reply_missing_id_and_own_only(mail):
     with pytest.raises(ToolError, match="At least one recipient"):
         web_compose.reply(provider, mailbox="INBOX", uid=1, body="")
     service.create_reply_draft.assert_not_called()
+
+
+def test_uncertain_send_keeps_specific_message(mail, monkeypatch):
+    from pyicloud.services.mail.exceptions import MailWriteUncertain
+
+    provider, service, _ = mail
+    monkeypatch.setattr(web_compose.web, "web_errors", REAL_WEB_ERRORS)
+    service.send_draft.side_effect = MailWriteUncertain("maybe sent")
+    with pytest.raises(ToolError, match="uncertain; check Sent/Drafts"):
+        web_compose.send(provider, to=["friend@example.com"], subject="s", body="b")

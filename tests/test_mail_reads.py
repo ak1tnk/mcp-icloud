@@ -157,6 +157,7 @@ async def test_move_capability_and_missing_config(conn, monkeypatch):
         )
         assert result.is_error and "MOVE" in str(result.content)
         monkeypatch.delenv("MCP_ICLOUD_MAIL_APP_PASSWORD")
+        monkeypatch.setenv("MCP_ICLOUD_MAIL_BACKEND", "imap")
         result = await client.call_tool("mail_list_mailboxes")
         assert result.is_error and "MCP_ICLOUD_MAIL_APP_PASSWORD" in str(result.content)
 

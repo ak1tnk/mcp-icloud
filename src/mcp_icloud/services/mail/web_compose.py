@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from email import policy
 from email.parser import HeaderParser
 from typing import TYPE_CHECKING, Any
@@ -28,6 +29,13 @@ def _sender(service: MailService, address: str | None, aliases: tuple[str, ...])
     if sender.lower() not in {item.lower() for item in enabled}:
         raise ToolError("From must be an enabled sender: " + ", ".join(enabled))
     return sender
+
+
+def _guarded(operation: Callable[[Any], dict[str, Any]], api: Any) -> dict[str, Any]:
+    # Inside provider.call, so Mail errors become specific messages before the provider's
+    # generic "iCloud request failed" mapping; session errors still reach the provider.
+    with web.web_errors():
+        return operation(api)
 
 
 def _uploads(service: MailService, paths: list[str] | None, limit: int) -> tuple:
@@ -64,7 +72,7 @@ def _original(service: MailService, original: MailMessage) -> tuple[Any, str | N
             for meta in original.parts
             if meta.content_type.split(";", 1)[0].strip().lower() == "text/plain"
             for part in body.parts
-            if part.guid.endswith(meta.id)
+            if part.guid.endswith("-" + meta.id)
         ),
         None,
     )
@@ -99,8 +107,7 @@ def send(
         )
         return _send(service, draft, sender, envelope)
 
-    with web.web_errors():
-        return provider.call(operation)
+    return provider.call(lambda api: _guarded(operation, api))
 
 
 def reply(
@@ -145,8 +152,7 @@ def reply(
         )
         return {**_send(service, draft, sender, envelope), "in_reply_to": headers.get("Message-ID")}
 
-    with web.web_errors():
-        return provider.call(operation)
+    return provider.call(lambda api: _guarded(operation, api))
 
 
 def forward(
@@ -185,8 +191,7 @@ def forward(
         )
         return _send(service, draft, sender, envelope)
 
-    with web.web_errors():
-        return provider.call(operation)
+    return provider.call(lambda api: _guarded(operation, api))
 
 
 def save_draft(
@@ -220,5 +225,4 @@ def save_draft(
             "message_id": draft.message.id,
         }
 
-    with web.web_errors():
-        return provider.call(operation)
+    return provider.call(lambda api: _guarded(operation, api))

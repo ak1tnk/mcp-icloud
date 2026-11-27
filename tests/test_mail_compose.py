@@ -248,7 +248,8 @@ async def test_auth_error(mail):
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("tool,args", TOOLS)
-async def test_not_configured(tool, args):
+async def test_not_configured(tool, args, monkeypatch):
+    monkeypatch.setenv("MCP_ICLOUD_MAIL_BACKEND", "imap")
     result = await invoke(tool, args)
     assert result.is_error
     assert "iCloud Mail is not configured" in str(result.content)
