@@ -47,7 +47,7 @@ Or with pip: `pip install .` inside a virtualenv.
 mcp-icloud login                       # prompts for Apple ID, password, then the 2FA code
 mcp-icloud login --apple-id you@example.com
 mcp-icloud status                      # checks that the stored session works
-mcp-icloud logout                      # deletes the local session files
+mcp-icloud logout                      # signs the session out at Apple, then deletes local files
 ```
 
 The password is read with a hidden prompt, used once to sign in, and never stored. What is stored
@@ -71,13 +71,15 @@ Apple ID only), `<apple-id>.session` and `<apple-id>.cookiejar`.
    `0700`/`0600`, and set `MCP_ICLOUD_SESSION_DIR` if the path differs. The session is plain files
    and is not tied to the machine.
 
-Prefer one session per machine: each running copy refreshes the same session, and two machines
-sharing one copy may sign each other out.
+Prefer one session per machine. Each running copy refreshes the session cookies on its own, so
+two machines sharing one copy may invalidate each other (not verified).
 
-When the session is missing or has expired, every tool returns an error that says so and tells
-you to run `mcp-icloud login` again (and re-copy the directory, if you use option 2). Apple's
-trust for a session typically lasts on the order of weeks to a couple of months; after that a new
-login with password and 2FA is needed.
+How it works: `login` stores Apple's session token, a 2FA *trust token* and cookies. When the
+short-lived web cookies expire, the server silently renews them with the session and trust
+tokens, without a password. Once Apple stops honouring the trust token, renewal fails and every
+tool returns an error telling you to run `mcp-icloud login` again (and re-copy the directory, if
+you use option 2). Apple does not document how long that trust lasts; reports for similar tools
+range from weeks to a few months.
 
 ## Register the server
 
@@ -108,9 +110,10 @@ Any other MCP client: run `mcp-icloud serve` over stdio.
   expires. Treat the session directory like a password.
 - **Never commit or share it.** It lives outside the repository by default, and `.gitignore`
   excludes `*.session`, `*.cookiejar` and `account.json` in case you point it inside.
-- **Revoke it.** `mcp-icloud logout` only deletes local files. To cut the session off at Apple,
-  change your Apple ID password, or review signed-in sessions and devices at
-  <https://account.apple.com>.
+- **Revoke it.** `mcp-icloud logout` asks Apple to sign this session out, then deletes the local
+  files. If Apple cannot be reached or does not confirm, change your Apple ID password or review
+  signed-in devices at <https://account.apple.com>. A copied session directory on another machine
+  is the same session.
 - The agent can create and deactivate addresses but not delete them. Deactivating stops
   forwarding; `hme_reactivate` undoes it.
 
