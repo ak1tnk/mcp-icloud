@@ -36,6 +36,7 @@ def login_command(apple_id: str | None) -> int:
                 if api.validate_2fa_code(input("2FA code: ").strip()):
                     break
             else:
+                print("The 2FA code was not accepted after 3 attempts.", file=sys.stderr)
                 return 1
             if not api.is_trusted_session:
                 api.trust_session()

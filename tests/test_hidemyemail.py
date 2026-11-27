@@ -87,7 +87,7 @@ async def test_update(api, args, expected):
         ("hme_reserve", {"email": "x", "label": "y"}, "reserve", "did not reserve"),
         ("hme_update", {"anonymous_id": "id"}, "", "Provide label or note"),
         ("hme_update", {"anonymous_id": "id", "note": "x"}, "get", "alias not found"),
-        ("hme_update", {"anonymous_id": "id", "note": "x"}, "update_metadata", "did not update"),
+        ("hme_update", {"anonymous_id": "id", "note": "x"}, "update_metadata", "did not confirm"),
         ("hme_deactivate", {"anonymous_id": "id"}, "", "did not confirm"),
         ("hme_reactivate", {"anonymous_id": "id"}, "inactive", "did not confirm"),
         ("hme_deactivate", {"anonymous_id": "id"}, "get", "alias not found"),

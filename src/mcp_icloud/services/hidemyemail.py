@@ -18,10 +18,7 @@ def _normalize(raw: dict[str, Any]) -> dict[str, Any]:
     timestamp = raw.get("createTimestamp")
     created_at = None
     if type(timestamp) is int:
-        try:
-            created_at = datetime.fromtimestamp(timestamp / 1000, UTC).isoformat()
-        except (ValueError, OverflowError, OSError):
-            pass
+        created_at = datetime.fromtimestamp(timestamp / 1000, UTC).isoformat()
     return {
         "email": raw.get("hme"),
         "anonymous_id": raw.get("anonymousId"),
@@ -78,19 +75,19 @@ def register(server: MCPServer, provider: ApiProvider) -> None:
         if not raw:
             raise ToolError("alias not found")
         current = _normalize(raw)
-        result = provider.call(
-            lambda api: api.hidemyemail.update_metadata(
-                anonymous_id,
-                label or current["label"],
-                note if note is not None else current["note"] or "",
-            )
+        new_label = label or current["label"]
+        new_note = note if note is not None else current["note"] or ""
+        # The update response shape is unverified, so the re-read below decides success.
+        provider.call(
+            lambda api: api.hidemyemail.update_metadata(anonymous_id, new_label, new_note)
         )
-        if not result:
-            raise ToolError("iCloud did not update the alias")
         raw = provider.call(lambda api: api.hidemyemail[anonymous_id])
         if not raw:
             raise ToolError("alias not found")
-        return _normalize(raw)
+        alias = _normalize(raw)
+        if alias["label"] != new_label or (alias["note"] or "") != new_note:
+            raise ToolError("iCloud did not confirm the update")
+        return alias
 
     @server.tool()
     def hme_deactivate(anonymous_id: str) -> dict[str, Any]:
