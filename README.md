@@ -25,7 +25,7 @@ and Linux.
 - Create a new Hide My Email address when you sign up for a website
 - List your addresses, add labels and notes, and turn addresses off and on again
 - Search and read your mail
-- Save attachments to a folder
+- Save attachments as files
 - Organize mail: mark as read, flag, move, archive, move to Trash
 - Send, reply and forward
 - Save a draft without sending it
