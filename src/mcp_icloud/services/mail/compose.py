@@ -13,12 +13,30 @@ from typing import TYPE_CHECKING, Any, cast
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
-from mcp_icloud.services.mail import imap
+from mcp_icloud.services.mail import imap, web_compose
+from mcp_icloud.services.mail.backend import selected_backend
 from mcp_icloud.services.mail.config import SMTP_HOST, SMTP_PORT, MailConfig
 from mcp_icloud.services.mail.errors import mail_errors
 
 if TYPE_CHECKING:
     from mcp_icloud.server import ApiProvider
+
+
+def _blocked(allowlist: tuple[str, ...], envelope: list[str]) -> None:
+    blocked = [
+        address
+        for address in envelope
+        if allowlist
+        and not any(
+            address.lower() == entry.lower()
+            or (entry.startswith("@") and address.lower().endswith(entry.lower()))
+            for entry in allowlist
+        )
+    ]
+    if blocked:
+        raise ToolError(
+            "Not sent: these recipients are not on MCP_ICLOUD_SEND_ALLOWLIST: " + ", ".join(blocked)
+        )
 
 
 def _sender(cfg: MailConfig, address: str | None) -> str:
@@ -99,20 +117,7 @@ def _message(
 def _send(cfg: MailConfig, msg: EmailMessage, envelope: list[str]) -> dict[str, Any]:
     if not envelope:
         raise ToolError("At least one recipient is required")
-    blocked = [
-        address
-        for address in envelope
-        if cfg.send_allowlist
-        and not any(
-            address.lower() == entry.lower()
-            or (entry.startswith("@") and address.lower().endswith(entry.lower()))
-            for entry in cfg.send_allowlist
-        )
-    ]
-    if blocked:
-        raise ToolError(
-            "Not sent: these recipients are not on MCP_ICLOUD_SEND_ALLOWLIST: " + ", ".join(blocked)
-        )
+    _blocked(cfg.send_allowlist, envelope)
     sender = str(msg["From"])
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as smtp:
         smtp.starttls(context=ssl.create_default_context())
@@ -150,6 +155,17 @@ def register(server: MCPServer, provider: ApiProvider) -> None:
     ) -> dict[str, Any]:
         """Send a message immediately, with optional attachments."""
         with mail_errors():
+            if selected_backend() == "web":
+                return web_compose.send(
+                    provider,
+                    to=to,
+                    subject=subject,
+                    body=body,
+                    cc=cc,
+                    bcc=bcc,
+                    from_address=from_address,
+                    attachments=attachments,
+                )
             cfg = MailConfig.from_env()
             sender = _sender(cfg, from_address)
             to, cc, bcc = _addresses(to), _addresses(cc), _addresses(bcc)
@@ -169,6 +185,16 @@ def register(server: MCPServer, provider: ApiProvider) -> None:
     ) -> dict[str, Any]:
         """Send a reply immediately, optionally to all original recipients."""
         with mail_errors():
+            if selected_backend() == "web":
+                return web_compose.reply(
+                    provider,
+                    mailbox=mailbox,
+                    uid=uid,
+                    body=body,
+                    reply_all=reply_all,
+                    from_address=from_address,
+                    attachments=attachments,
+                )
             cfg = MailConfig.from_env()
             sender = _sender(cfg, from_address)
             original = _original(cfg, mailbox, uid)
@@ -217,6 +243,18 @@ def register(server: MCPServer, provider: ApiProvider) -> None:
     ) -> dict[str, Any]:
         """Forward a message immediately, optionally including its attachments."""
         with mail_errors():
+            if selected_backend() == "web":
+                return web_compose.forward(
+                    provider,
+                    mailbox=mailbox,
+                    uid=uid,
+                    to=to,
+                    body=body,
+                    cc=cc,
+                    bcc=bcc,
+                    from_address=from_address,
+                    include_attachments=include_attachments,
+                )
             cfg = MailConfig.from_env()
             sender = _sender(cfg, from_address)
             to, cc, bcc = _addresses(to), _addresses(cc), _addresses(bcc)
@@ -254,6 +292,17 @@ def register(server: MCPServer, provider: ApiProvider) -> None:
     ) -> dict[str, Any]:
         """Save a message in Drafts without sending it."""
         with mail_errors():
+            if selected_backend() == "web":
+                return web_compose.save_draft(
+                    provider,
+                    to=to,
+                    subject=subject,
+                    body=body,
+                    cc=cc,
+                    bcc=bcc,
+                    from_address=from_address,
+                    attachments=attachments,
+                )
             cfg = MailConfig.from_env()
             sender = _sender(cfg, from_address)
             to, cc, bcc_list = _addresses(to), _addresses(cc), _addresses(bcc)
