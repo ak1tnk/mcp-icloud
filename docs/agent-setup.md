@@ -9,9 +9,13 @@ and iCloud Mail (`mail_*`). Repository: <https://github.com/ak1tnk/mcp-icloud>.
 ## Hard rules
 
 - **Reply to the human in the language they used in their request.**
-- **Never ask the human to type a password, 2FA code or app-specific password into the chat**, and
-  never accept one if they offer it: tell them to use the terminal command instead. If one is
-  pasted anyway, do not repeat it, and tell them to revoke it at <https://account.apple.com>.
+- **Never ask the human to type a password or app-specific password into the chat**, and never
+  accept one if they offer it: tell them to use the terminal command or the platform's secret
+  store instead. If one is pasted anyway, do not repeat it, and tell them to revoke it at
+  <https://account.apple.com> (change the Apple ID password).
+- **The one exception is the 6-digit 2FA code of the secret store login** (step 4): after
+  `icloud_login_start` says a code was sent, ask the human for it and pass it to
+  `icloud_login_verify`. It is short-lived and single-use. Don't repeat it anywhere else.
 - **Never print secrets.** Don't `cat` `mail.json`, `*.session`, `*.cookiejar` or env files, and
   don't echo environment variables that hold passwords.
 - **Never run `mcp-icloud login` or `mcp-icloud mail-login` for the human.** They are interactive
@@ -59,9 +63,10 @@ Use the absolute path from step 1. Pick what matches your host:
   { "mcpServers": { "icloud": { "command": "<abs-path>/mcp-icloud", "args": ["serve"] } } }
   ```
 
-Do not put credentials in the server command or config. If the platform has a secret store and
-the human prefers it for Mail, it should inject `MCP_ICLOUD_MAIL_USER` and
-`MCP_ICLOUD_MAIL_APP_PASSWORD` as environment variables.
+Do not put credentials in the server command or config. If the platform has a secret store, it
+should inject them as environment variables: `MCP_ICLOUD_APPLE_ID` and `MCP_ICLOUD_APPLE_PASSWORD`
+for the secret store login (step 4), and optionally `MCP_ICLOUD_MAIL_USER` and
+`MCP_ICLOUD_MAIL_APP_PASSWORD` for Mail over IMAP.
 
 Most hosts need a restart or a new session before new MCP tools appear.
 
@@ -85,10 +90,28 @@ machine where the server runs:
 mcp-icloud login
 ```
 
-It asks for the Apple ID, password and 2FA code in the terminal. If the server runs on a VM you
-can't open a terminal on, explain the two options and the risk:
+It asks for the Apple ID, password and 2FA code in the terminal.
 
-1. SSH into the VM and run `mcp-icloud login` there (recommended).
+**If you can't give the human a terminal on the machine where the server runs** (a cloud VM, or a
+platform such as Grok, Muse or Qwen), prefer the secret store login:
+
+1. Tell the human exactly: "In this platform's secret store / connector settings, add two secrets
+   for the mcp-icloud server: `MCP_ICLOUD_APPLE_ID` (your Apple ID email) and
+   `MCP_ICLOUD_APPLE_PASSWORD` (your Apple ID password). Don't send the password in this chat."
+   Then restart or reconnect the server if the platform needs that.
+2. Call `icloud_login_start`. If it says the login is still valid, you're done. If it says a
+   code was sent, ask the human for the 6-digit code Apple shows on their devices.
+3. Call `icloud_login_verify` with the code. On a wrong code, ask again or call
+   `icloud_login_start` for a new code. Follow the tool's error text; after a rejected password,
+   don't call start again until the human has fixed the secret.
+
+Risk to state plainly: anyone who can read the platform's secrets has the Apple ID password. 2FA
+still protects new sign-ins, but the saved session gives full iCloud access. Recommend it only on
+platforms the human trusts. To revoke: change the Apple ID password, or `mcp-icloud logout`.
+
+Other options when there is no terminal (explain the risk below):
+
+1. SSH into the VM and run `mcp-icloud login` there.
 2. Run `mcp-icloud login` on their own computer, then copy the session directory
    (`~/.config/mcp-icloud`) to the same path on the VM, keeping it private (`chmod 700` the
    directory, `chmod 600` the files), or set `MCP_ICLOUD_SESSION_DIR` to where they put it.
@@ -128,8 +151,10 @@ requires it, and try a read-only tool (`hme_list` or `mail_list_mailboxes`).
 - On the web backend some searches are limited (one text criterion per search; unread/flagged
   filters not combined). The error says so; split the search or tell the human the IMAP backend
   removes the limit.
-- An error saying the session is missing or expired means the human must run
-  `mcp-icloud login` again (or re-copy the session). An error saying Mail is not configured means
+- An error saying the session is missing or expired: if `MCP_ICLOUD_APPLE_ID` and
+  `MCP_ICLOUD_APPLE_PASSWORD` are set for the server, call `icloud_login_start`, ask the human for
+  the 2FA code and call `icloud_login_verify`. Otherwise the human must run `mcp-icloud login`
+  again (or re-copy the session). An error saying Mail is not configured means
   the IMAP backend was forced without an app-specific password. Relay these to the human; don't
   try to work around them.
 
@@ -164,4 +189,5 @@ rm -rf ~/.config/mcp-icloud
 ```
 
 Then tell the human to delete the app-specific password at <https://account.apple.com> if they
-created one, and to remove any session directory they copied to other machines.
+created one, to remove any session directory they copied to other machines, and to delete
+`MCP_ICLOUD_APPLE_PASSWORD` and the other mcp-icloud secrets from the platform's secret store.

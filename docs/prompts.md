@@ -3,7 +3,8 @@
 Copy-paste prompts for using mcp-icloud with AI agents such as Claude Code, Codex, Grok, Muse and
 Qwen. Each prompt is given in English, Japanese and Simplified Chinese, and asks the agent to reply
 in that language. Replace placeholders such as `example-shop.com` with your own values. Never put
-passwords, 2FA codes or app-specific passwords in a prompt.
+passwords or app-specific passwords in a prompt or chat. The only thing you may type in chat is
+the 6-digit 2FA code during the secret store login (B), when the agent asks for it.
 
 - [A. Setup](#a-setup)
 - [B. Setup when the agent runs on another machine](#b-setup-when-the-agent-runs-on-another-machine)
@@ -39,18 +40,20 @@ https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md
 
 ## B. Setup when the agent runs on another machine
 
-For agents that run on a cloud computer or server (for example Grok, Muse or Qwen).
+For agents that run on a cloud computer or server (for example Grok, Muse or Qwen). First, in the
+agent platform's secret store or connector settings, set `MCP_ICLOUD_APPLE_ID` and
+`MCP_ICLOUD_APPLE_PASSWORD` for the mcp-icloud server. Then send the prompt. Prefer SSH and
+`mcp-icloud login`? Use prompt A instead.
 
 **English**
 
 ```
 Set up mcp-icloud on this machine by following
 https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md
-Register it as an MCP server for yourself. Do not ask me for any password, 2FA code or
-app-specific password in chat. When you reach the steps I must do myself, tell me exactly what to
-run: I will SSH into this machine and run `mcp-icloud login` there (and `mcp-icloud mail-login`
-only if I want the IMAP mail backend). Then check `mcp-icloud status` and report.
-Please reply to me in English.
+Register it as an MCP server for yourself. I stored MCP_ICLOUD_APPLE_ID and
+MCP_ICLOUD_APPLE_PASSWORD in your secret store for it. Log in with icloud_login_start; when Apple
+sends a 2FA code, ask me for it in chat and call icloud_login_verify. Never ask me for my password.
+Then try hme_list and report. Please reply to me in English.
 ```
 
 **日本語**
@@ -58,20 +61,20 @@ Please reply to me in English.
 ```
 https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md の手順に従って、
 このマシンに mcp-icloud をセットアップし、あなた自身の MCP サーバーとして登録してください。
-パスワード・2FA コード・App 用パスワードをチャットで聞かないでください。私がやるべき手順に来たら、
-実行するコマンドを正確に教えてください。私がこのマシンに SSH して `mcp-icloud login` を実行します
-（IMAP のメールバックエンドを使いたい場合だけ `mcp-icloud mail-login` も実行します）。
-最後に `mcp-icloud status` を確認して報告してください。やり取りは日本語でお願いします。
+MCP_ICLOUD_APPLE_ID と MCP_ICLOUD_APPLE_PASSWORD はシークレットストアに保存済みです。
+icloud_login_start でログインし、Apple から 2FA コードが届いたらチャットで私に聞いて
+icloud_login_verify を呼んでください。パスワードは絶対に聞かないでください。
+最後に hme_list を試して報告してください。やり取りは日本語でお願いします。
 ```
 
 **简体中文**
 
 ```
 请按照 https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md 的步骤，
-在这台机器上安装 mcp-icloud，并把它注册为你自己的 MCP 服务器。不要在聊天中向我索要任何密码、
-双重认证验证码或 App 专用密码。到了需要我亲自操作的步骤时，请准确告诉我要运行的命令：
-我会 SSH 登录这台机器，在那里运行 `mcp-icloud login`（只有在我想使用 IMAP 邮件后端时，
-才会再运行 `mcp-icloud mail-login`）。最后检查 `mcp-icloud status` 并向我报告。请用简体中文和我交流。
+在这台机器上安装 mcp-icloud，并把它注册为你自己的 MCP 服务器。我已在你的密钥存储中为它保存了
+MCP_ICLOUD_APPLE_ID 和 MCP_ICLOUD_APPLE_PASSWORD。请用 icloud_login_start 登录；Apple 发送双重认证
+验证码后，在聊天中向我询问，然后调用 icloud_login_verify。绝不要向我索要密码。
+最后试一下 hme_list 并向我报告。请用简体中文和我交流。
 ```
 
 ---
@@ -193,9 +196,11 @@ You have the mcp-icloud MCP tools.
   (trash = move to Trash, never permanent). mail_send, mail_reply and mail_forward send
   immediately; mail_save_draft only saves to Drafts.
 Rules:
-- Never ask for, accept, store or repeat passwords, 2FA codes or app-specific passwords. If a
-  tool says the session is expired or Mail is not configured, tell the human to run
-  `mcp-icloud login` or `mcp-icloud mail-login` in a terminal; don't work around it.
+- Never ask for, accept, store or repeat passwords or app-specific passwords. If a tool says
+  the session is expired: when MCP_ICLOUD_APPLE_ID and MCP_ICLOUD_APPLE_PASSWORD are set, call
+  icloud_login_start, ask the human for the 6-digit 2FA code (the only secret you may ask for)
+  and call icloud_login_verify; otherwise tell the human to run `mcp-icloud login` in a
+  terminal. If Mail is not configured, tell them to run `mcp-icloud mail-login`.
 - Reserve, deactivate or reactivate addresses, and change mailboxes, only when asked.
 - Send mail only when the human asked for that specific message; if wording or recipients are
   unclear, save a draft and ask.
@@ -213,9 +218,11 @@ Rules:
   mail_set_flags・mail_move・mail_archive・mail_trash はメールボックスを変更（trash はゴミ箱への移動で、完全削除はしない）。
   mail_send・mail_reply・mail_forward は即時送信。mail_save_draft は下書きに保存するだけ。
 ルール:
-- パスワード・2FA コード・App 用パスワードを求めない・受け取らない・保存しない・繰り返さない。
-  セッション切れや メール未設定のエラーが出たら、ターミナルで `mcp-icloud login` または
-  `mcp-icloud mail-login` を実行するよう人間に伝え、回避しようとしない。
+- パスワード・App 用パスワードを求めない・受け取らない・保存しない・繰り返さない。
+  セッション切れのエラーが出たら、MCP_ICLOUD_APPLE_ID と MCP_ICLOUD_APPLE_PASSWORD が設定されていれば
+  icloud_login_start を呼び、6 桁の 2FA コード（聞いてよい唯一の秘密情報）を人間に聞いて
+  icloud_login_verify を呼ぶ。設定されていなければ、ターミナルで `mcp-icloud login` を実行するよう伝える。
+  メール未設定のエラーなら `mcp-icloud mail-login` を実行するよう伝える。
 - アドレスの予約・無効化・再有効化と、メールボックスの変更は頼まれたときだけ行う。
 - メールは人間がその内容の送信を頼んだときだけ送る。文面や宛先が曖昧なら下書きを保存して確認する。
 - 人間には日本語で返事をする。
@@ -232,8 +239,10 @@ Rules:
   mail_set_flags、mail_move、mail_archive、mail_trash 会修改邮箱（trash 是移到废纸篓，不会永久删除）。
   mail_send、mail_reply、mail_forward 会立即发送；mail_save_draft 只保存到草稿箱。
 规则：
-- 不要索要、接收、保存或复述密码、双重认证验证码或 App 专用密码。如果工具提示会话过期或邮件未配置，
-  请让人类在终端运行 `mcp-icloud login` 或 `mcp-icloud mail-login`，不要设法绕过。
+- 不要索要、接收、保存或复述密码或 App 专用密码。如果工具提示会话过期：若已设置
+  MCP_ICLOUD_APPLE_ID 和 MCP_ICLOUD_APPLE_PASSWORD，调用 icloud_login_start，向人类询问 6 位双重认证
+  验证码（唯一可以询问的秘密信息），再调用 icloud_login_verify；否则请人类在终端运行
+  `mcp-icloud login`。如果提示邮件未配置，请人类运行 `mcp-icloud mail-login`。
 - 只有在被要求时才保留、停用或重新启用地址，以及修改邮箱。
 - 只有当人类要求发送那封具体的邮件时才发送；如果措辞或收件人不明确，先保存草稿并询问。
 - 用简体中文回复人类。
