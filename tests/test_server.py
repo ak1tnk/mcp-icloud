@@ -142,3 +142,15 @@ def test_no_retry_on_ambiguous_failures(exc):
         provider.call(lambda api: write())
     assert write.call_count == 1
     assert loader.call_count == 1
+
+
+@pytest.mark.anyio
+async def test_hme_agent_login_guidance(monkeypatch, session_dir):
+    monkeypatch.setenv("MCP_ICLOUD_APPLE_ID", "a@example.com")
+    monkeypatch.setenv("MCP_ICLOUD_APPLE_PASSWORD", "example-password")
+    loader = MagicMock(side_effect=NotLoggedInError(session_dir))
+    async with Client(build_server(ApiProvider(loader))) as client:
+        result = await client.call_tool("hme_generate")
+        assert result.is_error
+        assert "icloud_login_start" in str(result.content)
+        assert "mcp-icloud login" in str(result.content)

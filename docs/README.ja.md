@@ -45,8 +45,9 @@ https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md
 インストール、登録、動作確認はエージェントが行います。あなたがやることは次のとおりです。
 
 - エージェントに言われたら、ターミナルで `mcp-icloud login` を実行し、Apple ID・パスワード・2FA コードを
-  そこで入力します。このログイン 1 回で「メールを非公開」とメールの両方が使えます。
-- パスワードやコードをチャットに貼らないでください。まともなエージェントなら求めてきません。
+  そこで入力します。このログイン 1 回で「メールを非公開」とメールの両方が使えます。ターミナルがない
+  （エージェントが別のマシンで動いている）場合は、[シークレットストアでのログイン](#other-machines)を使います。
+- パスワードをチャットに貼らないでください。まともなエージェントなら求めてきません。
 - 任意：メールの接続をより安定させたい場合は、<https://account.apple.com> で App 用パスワードを作り、
   `mcp-icloud mail-login` を実行します。
 
@@ -81,6 +82,7 @@ mcp-icloud status    # ログインを確認
 | --- | --- | --- |
 | `MCP_ICLOUD_SESSION_DIR` | `$XDG_CONFIG_HOME/mcp-icloud`、なければ `~/.config/mcp-icloud` | ログイン情報の保存場所 |
 | `MCP_ICLOUD_APPLE_ID` | `mcp-icloud login` で保存したもの | 保存済みの Apple ID を上書き |
+| `MCP_ICLOUD_APPLE_PASSWORD` | — | Apple ID のパスワード。エージェント用ログインツールだけが使う（[下記](#other-machines)） |
 | `MCP_ICLOUD_MAIL_BACKEND` | `auto` | `web`、`imap`、`auto`（App 用パスワードがあれば IMAP、なければ web） |
 | `MCP_ICLOUD_MAIL_USER` | `mail-login` で保存したもの。web ではメインの iCloud アドレス | iCloud メールのアドレス。既定の差出人 |
 | `MCP_ICLOUD_MAIL_APP_PASSWORD` | `mail-login` で保存したもの | IMAP/SMTP 用の App 用パスワード |
@@ -88,18 +90,28 @@ mcp-icloud status    # ログインを確認
 | `MCP_ICLOUD_SEND_ALLOWLIST` | 制限なし | 送信を許す宛先：アドレスと `@domain`（カンマ区切り） |
 | `MCP_ICLOUD_MAIL_MAX_ATTACHMENT_MB` | `20` | 添付ファイルのサイズ上限 |
 
+<a id="other-machines"></a>
+
 ## Grok・Muse・Qwen などのエージェントで使う
 
 エージェントが別のマシン（クラウド上のコンピューターやサーバー）で動いている場合は、そのマシンにも
-ログインが必要です。方法は 2 つあります。
+ログインが必要です。方法は 3 つあります。
 
-1. **そのマシンで自分でログインする**（おすすめ）：SSH で接続して `mcp-icloud login` を実行します。
-2. **自分のコンピューターからログインフォルダをコピーする**：自分のコンピューターで `mcp-icloud login` を実行し、
+1. **シークレットストアでログインする**（そのマシンにターミナルがない場合のおすすめ）：エージェント基盤の
+   シークレットストアやコネクタ設定で、このサーバー用に `MCP_ICLOUD_APPLE_ID` と `MCP_ICLOUD_APPLE_PASSWORD`
+   を設定します。そのうえでエージェントに「iCloud にログインして」と頼みます。Apple からデバイスにコードが届き、
+   エージェントがチャットでそのコードを聞いてきます。チャットに入力するのはこの 6 桁のコードだけです
+   （有効期間が短く、1 回しか使えません）。パスワードは絶対にチャットに貼らないでください。
+2. **そのマシンで自分でログインする**：SSH で接続して `mcp-icloud login` を実行します。
+3. **自分のコンピューターからログインフォルダをコピーする**：自分のコンピューターで `mcp-icloud login` を実行し、
    `~/.config/mcp-icloud` をエージェントのマシンの同じ場所にコピーします。他人が読めないようにしてください
    （`chmod 700`）。
 
 注意：ログインフォルダがあれば、このサーバーの機能に限らず iCloud アカウント全体（メール、Drive、写真など）を
-使えてしまいます。信頼できるマシンにだけ置いてください。
+使えてしまいます。信頼できるマシンにだけ置いてください。シークレットストアでのログインでは、その基盤の
+シークレットを読める人は誰でもあなたの Apple ID パスワードを知ることができます。新しいサインインは 2FA で
+守られますが、保存されたログインは全権限を持つので、信頼できる基盤でだけ使ってください。取り消すには、
+Apple ID のパスワードを変更するか、`mcp-icloud logout` を実行します。
 
 ログインフォルダを置かずにメールだけ使う場合は、そのマシンで App 用パスワードを使います
 （`mcp-icloud mail-login`、または `MCP_ICLOUD_MAIL_USER` と `MCP_ICLOUD_MAIL_APP_PASSWORD`）。
@@ -113,7 +125,8 @@ mcp-icloud status    # ログインを確認
 - **既定のメール接続は試験的です。** iCloud.com の非公開 Web API を使うため、Apple の変更で動かなくなることが
   あります。IMAP 接続（App 用パスワード）のほうが安定しています。既定の接続では、1 回の検索で使える文字列の
   条件（差出人・宛先・件名・本文）は 1 つだけです。
-- **ログインは一定期間（数週間〜数か月）で切れます。** そのときは `mcp-icloud login` をもう一度実行してください。
+- **ログインは一定期間（数週間〜数か月）で切れます。** そのときは `mcp-icloud login` をもう一度実行するか、
+  エージェントにもう一度ログインを頼んでください（シークレットストアでのログイン）。
   ハードウェアセキュリティキーを使うアカウントにはまだ対応していません。
 - **非公式です。** Apple とは関係ありません。
 - **アクセスの取り消し**：`mcp-icloud logout` で Apple 側からサインアウトし、ログイン情報を削除します。
@@ -127,6 +140,8 @@ mcp-icloud status    # ログインを確認
 <details>
 <summary>ツール一覧</summary>
 
+- ログイン：`icloud_login_start`（保存したシークレットでサインインし、Apple に 2FA コードを送らせる）、
+  `icloud_login_verify`（コードを受け取ってログインを保存する）
 - メールを非公開：`hme_list`、`hme_generate`（アドレスの候補を出す）、`hme_reserve`（ラベルとメモを付けて保存）、
   `hme_update`、`hme_deactivate`、`hme_reactivate`
 - メール：`mail_list_mailboxes`、`mail_search`、`mail_read`、`mail_download_attachment`、`mail_set_flags`、

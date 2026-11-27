@@ -83,3 +83,16 @@ def test_is_auth_error_ignores_rewritten_500() -> None:
     assert not is_auth_error(
         PyiCloudAPIResponseException("Authentication required for Account.", 500)
     )
+
+
+@pytest.mark.parametrize("configured", [True, False])
+def test_agent_login_guidance(monkeypatch, session_dir, configured):
+    if configured:
+        monkeypatch.setenv(config.APPLE_ID_ENV, "a@example.com")
+        monkeypatch.setenv(config.PASSWORD_ENV, "example-password")
+    message = session.not_logged_in_message(session_dir)
+    assert "mcp-icloud login" in message
+    if configured:
+        assert "Call icloud_login_start, ask the user for the 2FA code Apple sends" in message
+    else:
+        assert "An agent without a terminal can instead have the user store" in message

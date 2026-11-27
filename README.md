@@ -46,8 +46,9 @@ https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md
 The agent installs it, registers it and checks it. You do this yourself:
 
 - When the agent asks, open a terminal and run `mcp-icloud login`. Enter your Apple ID, password
-  and 2FA code there. One login covers Hide My Email and Mail.
-- Never paste a password or code into the chat. A good agent will not ask for one.
+  and 2FA code there. One login covers Hide My Email and Mail. No terminal (the agent runs on
+  another machine)? Use the [secret store login](#other-machines).
+- Never paste your password into the chat. A good agent will not ask for it.
 - Optional: for a more stable mail connection, create an app-specific password at
   <https://account.apple.com> and run `mcp-icloud mail-login`.
 
@@ -82,6 +83,7 @@ All optional. Set them in the MCP server's environment.
 | --- | --- | --- |
 | `MCP_ICLOUD_SESSION_DIR` | `$XDG_CONFIG_HOME/mcp-icloud`, else `~/.config/mcp-icloud` | Where the login is stored |
 | `MCP_ICLOUD_APPLE_ID` | from `mcp-icloud login` | Overrides the saved Apple ID |
+| `MCP_ICLOUD_APPLE_PASSWORD` | — | Apple ID password, only for the agent login tools ([below](#other-machines)) |
 | `MCP_ICLOUD_MAIL_BACKEND` | `auto` | `web`, `imap`, or `auto` (IMAP if an app-specific password is set, else web) |
 | `MCP_ICLOUD_MAIL_USER` | from `mail-login`; on web, your main iCloud address | Your iCloud Mail address; the default From |
 | `MCP_ICLOUD_MAIL_APP_PASSWORD` | from `mail-login` | App-specific password for IMAP/SMTP |
@@ -89,18 +91,28 @@ All optional. Set them in the MCP server's environment.
 | `MCP_ICLOUD_SEND_ALLOWLIST` | no limit | Allowed recipients: addresses and `@domain`, comma-separated |
 | `MCP_ICLOUD_MAIL_MAX_ATTACHMENT_MB` | `20` | Attachment size limit |
 
+<a id="other-machines"></a>
+
 ## Using it with Grok, Muse, Qwen and other agents
 
 If your agent runs on another machine (a cloud computer or server), the login must be on that
-machine too. Two ways:
+machine too. Three ways:
 
-1. **Log in there yourself** (recommended): connect with SSH and run `mcp-icloud login`.
-2. **Copy the login folder** from your computer: run `mcp-icloud login` on your computer, then copy
+1. **Secret store login** (recommended when you have no terminal there): in the agent platform's
+   secret store or connector settings, set `MCP_ICLOUD_APPLE_ID` and `MCP_ICLOUD_APPLE_PASSWORD`
+   for this server. Then ask the agent to log in to iCloud. Apple sends a code to your devices;
+   the agent asks you for it in chat. That 6-digit code is the only thing you type in the chat:
+   it is short-lived and works once. Never paste the password into the chat.
+2. **Log in there yourself**: connect with SSH and run `mcp-icloud login`.
+3. **Copy the login folder** from your computer: run `mcp-icloud login` on your computer, then copy
    `~/.config/mcp-icloud` to the same place on the agent's machine. Keep it private
    (`chmod 700`).
 
 Risk: the login folder gives full access to your iCloud account (Mail, Drive, Photos, …), not
-only what this server does. Only put it on machines you trust.
+only what this server does. Only put it on machines you trust. With the secret store login,
+anyone who can read that platform's secrets has your Apple ID password. 2FA still protects new
+sign-ins, but the saved login has full access, so use it only on platforms you trust. To revoke,
+change your Apple ID password or run `mcp-icloud logout`.
 
 To use Mail only, without the login folder: use an app-specific password there
 (`mcp-icloud mail-login`, or `MCP_ICLOUD_MAIL_USER` and `MCP_ICLOUD_MAIL_APP_PASSWORD`).
@@ -114,7 +126,8 @@ To use Mail only, without the login folder: use an app-specific password there
 - **The default mail connection is experimental.** It uses iCloud.com's private web API, which
   Apple can change. The IMAP connection (app-specific password) is more stable. On the default
   connection, a search can use only one text filter (sender, recipient, subject or text) at a time.
-- **The login expires** after a while (weeks to months). Then run `mcp-icloud login` again.
+- **The login expires** after a while (weeks to months). Then run `mcp-icloud login` again, or
+  ask the agent to log in again (secret store login).
   Accounts that use a hardware security key are not supported yet.
 - **Unofficial.** Not affiliated with Apple.
 - **Revoke access**: `mcp-icloud logout` signs out at Apple and deletes the login.
@@ -129,6 +142,8 @@ Built on [pyicloud](https://github.com/timlaing/pyicloud) and the
 <details>
 <summary>Tool reference</summary>
 
+- Login: `icloud_login_start` (signs in with the stored secrets and has Apple send a 2FA code),
+  `icloud_login_verify` (takes the code and saves the login)
 - Hide My Email: `hme_list`, `hme_generate` (proposes an address), `hme_reserve` (saves it with a
   label and note), `hme_update`, `hme_deactivate`, `hme_reactivate`
 - Mail: `mail_list_mailboxes`, `mail_search`, `mail_read`, `mail_download_attachment`,

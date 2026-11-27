@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from pyicloud import PyiCloudService
@@ -22,13 +23,29 @@ _AUTH_REQUIRED_REASON = "Authentication required for Account."
 
 
 def not_logged_in_message(directory: Path) -> str:
-    return (
+    configured = all(
+        os.environ.get(name, "").strip() for name in (config.APPLE_ID_ENV, config.PASSWORD_ENV)
+    )
+    prefix = (
+        "Call icloud_login_start, ask the user for the 2FA code Apple sends, then call "
+        "icloud_login_verify with it. Alternatively, on a machine with a terminal, "
+        if configured
+        else "On a machine with a terminal, "
+    )
+    message = (
         f"iCloud session is missing or expired (session directory: {directory}). "
-        "On a machine with a terminal, run `mcp-icloud login` and complete 2FA. "
+        f"{prefix}run `mcp-icloud login` and complete 2FA. "
         "If this server runs on another machine (e.g. a Linux VM), then copy that "
         "session directory to it (keep it 0700, files 0600) or point "
         "MCP_ICLOUD_SESSION_DIR at the copy. Then retry."
     )
+    if not configured:
+        message += (
+            " An agent without a terminal can instead have the user store MCP_ICLOUD_APPLE_ID "
+            "and MCP_ICLOUD_APPLE_PASSWORD as secrets of this MCP server, then call "
+            "icloud_login_start."
+        )
+    return message
 
 
 class NotLoggedInError(Exception):

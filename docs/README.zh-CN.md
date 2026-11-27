@@ -45,8 +45,9 @@ https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md
 智能体会完成安装、注册和检查。你需要亲自做的是：
 
 - 智能体提示时，打开终端运行 `mcp-icloud login`，在终端里输入 Apple ID、密码和双重认证验证码。
-  一次登录同时覆盖“隐藏邮件地址”和邮件。
-- 不要把密码或验证码粘贴到聊天里。靠谱的智能体不会向你索要。
+  一次登录同时覆盖“隐藏邮件地址”和邮件。没有终端（智能体运行在另一台机器上）？请用
+  [密钥存储登录](#other-machines)。
+- 不要把密码粘贴到聊天里。靠谱的智能体不会向你索要。
 - 可选：如果想让邮件连接更稳定，在 <https://account.apple.com> 创建 App 专用密码，然后运行
   `mcp-icloud mail-login`。
 
@@ -80,6 +81,7 @@ mcp-icloud status    # 检查登录状态
 | --- | --- | --- |
 | `MCP_ICLOUD_SESSION_DIR` | `$XDG_CONFIG_HOME/mcp-icloud`，否则 `~/.config/mcp-icloud` | 登录信息的保存位置 |
 | `MCP_ICLOUD_APPLE_ID` | 来自 `mcp-icloud login` | 覆盖已保存的 Apple ID |
+| `MCP_ICLOUD_APPLE_PASSWORD` | — | Apple ID 密码，仅供智能体登录工具使用（[见下文](#other-machines)） |
 | `MCP_ICLOUD_MAIL_BACKEND` | `auto` | `web`、`imap` 或 `auto`（设置了 App 专用密码则用 IMAP，否则用 web） |
 | `MCP_ICLOUD_MAIL_USER` | 来自 `mail-login`；web 下为你的主 iCloud 地址 | 你的 iCloud 邮件地址，默认发件人 |
 | `MCP_ICLOUD_MAIL_APP_PASSWORD` | 来自 `mail-login` | IMAP/SMTP 用的 App 专用密码 |
@@ -87,16 +89,24 @@ mcp-icloud status    # 检查登录状态
 | `MCP_ICLOUD_SEND_ALLOWLIST` | 不限制 | 允许的收件人：地址和 `@domain`（逗号分隔） |
 | `MCP_ICLOUD_MAIL_MAX_ATTACHMENT_MB` | `20` | 附件大小上限 |
 
+<a id="other-machines"></a>
+
 ## 在 Grok、Muse、Qwen 等智能体中使用
 
-如果智能体运行在另一台机器上（云端电脑或服务器），那台机器上也需要登录。有两种方法：
+如果智能体运行在另一台机器上（云端电脑或服务器），那台机器上也需要登录。有三种方法：
 
-1. **自己在那台机器上登录**（推荐）：用 SSH 连接，运行 `mcp-icloud login`。
-2. **从你的电脑复制登录文件夹**：在你的电脑上运行 `mcp-icloud login`，然后把 `~/.config/mcp-icloud`
+1. **密钥存储登录**（那台机器上没有终端时推荐）：在智能体平台的密钥存储或连接器设置中，为本服务器设置
+   `MCP_ICLOUD_APPLE_ID` 和 `MCP_ICLOUD_APPLE_PASSWORD`。然后让智能体登录 iCloud。Apple 会向你的设备发送
+   验证码，智能体会在聊天中向你询问。你在聊天里输入的只有这个 6 位验证码：它有效期很短，且只能用一次。
+   绝不要把密码粘贴到聊天里。
+2. **自己在那台机器上登录**：用 SSH 连接，运行 `mcp-icloud login`。
+3. **从你的电脑复制登录文件夹**：在你的电脑上运行 `mcp-icloud login`，然后把 `~/.config/mcp-icloud`
    复制到智能体所在机器的相同位置。注意不要让别人读取（`chmod 700`）。
 
 风险：有了登录文件夹，就能使用你的整个 iCloud 账户（邮件、云盘、照片等），而不只是本服务器的功能。
-只放在你信任的机器上。
+只放在你信任的机器上。使用密钥存储登录时，能读取该平台密钥的人都能拿到你的 Apple ID 密码。新的登录
+仍受双重认证保护，但保存下来的登录拥有完整权限，所以只在你信任的平台上使用。要撤销，请修改 Apple ID
+密码或运行 `mcp-icloud logout`。
 
 如果只想用邮件、不放登录文件夹：在那台机器上使用 App 专用密码
 （`mcp-icloud mail-login`，或 `MCP_ICLOUD_MAIL_USER` 和 `MCP_ICLOUD_MAIL_APP_PASSWORD`）。
@@ -109,7 +119,8 @@ mcp-icloud status    # 检查登录状态
   `MCP_ICLOUD_SEND_ALLOWLIST`。
 - **默认的邮件连接是实验性的。** 它使用 iCloud.com 的非公开 Web API，Apple 随时可能改动。IMAP 连接
   （App 专用密码）更稳定。在默认连接下，一次搜索只能用一个文字条件（发件人、收件人、主题或正文）。
-- **登录会在一段时间后（几周到几个月）失效。** 届时请再次运行 `mcp-icloud login`。
+- **登录会在一段时间后（几周到几个月）失效。** 届时请再次运行 `mcp-icloud login`，
+  或让智能体再登录一次（密钥存储登录）。
   暂不支持使用硬件安全密钥的账户。
 - **非官方项目。** 与 Apple 无关。
 - **撤销访问**：`mcp-icloud logout` 会在 Apple 端退出登录并删除登录信息。`mcp-icloud mail-logout`
@@ -123,6 +134,8 @@ mcp-icloud status    # 检查登录状态
 <details>
 <summary>工具列表</summary>
 
+- 登录：`icloud_login_start`（用保存的密钥登录，并让 Apple 发送双重认证验证码）、
+  `icloud_login_verify`（接收验证码并保存登录）
 - 隐藏邮件地址：`hme_list`、`hme_generate`（生成候选地址）、`hme_reserve`（加上标签和备注后保存）、
   `hme_update`、`hme_deactivate`、`hme_reactivate`
 - 邮件：`mail_list_mailboxes`、`mail_search`、`mail_read`、`mail_download_attachment`、`mail_set_flags`、
