@@ -6,7 +6,13 @@ from unittest.mock import MagicMock
 
 import pytest
 from mcp import Client
-from pyicloud.exceptions import PyiCloudAPIResponseException, PyiCloudException
+from mcp.server.mcpserver.exceptions import ToolError
+from pyicloud.exceptions import (
+    PyiCloudAPIResponseException,
+    PyiCloudConnectionException,
+    PyiCloudException,
+)
+from pyicloud.services.mail import MailWriteRejected, MailWriteUncertain
 
 from mcp_icloud.server import ApiProvider, build_server
 from mcp_icloud.session import NotLoggedInError
@@ -106,8 +112,6 @@ def test_expired_cached_session_is_renewed_once():
 
 
 def test_renewal_failure_reports_login(session_dir: Path):
-    from mcp.server.mcpserver.exceptions import ToolError
-
     stale = MagicMock()
     stale.hidemyemail.generate.side_effect = PyiCloudAPIResponseException("expired", 421)
     loader = MagicMock(side_effect=[stale, NotLoggedInError(session_dir)])
@@ -115,3 +119,26 @@ def test_renewal_failure_reports_login(session_dir: Path):
     provider.call(lambda api: None)
     with pytest.raises(ToolError, match="mcp-icloud login"):
         provider.call(lambda api: api.hidemyemail.generate())
+
+
+@pytest.mark.parametrize(
+    "exc",
+    [
+        PyiCloudConnectionException("timeout or connection reset"),  # no response: outcome unknown
+        PyiCloudAPIResponseException("server error", 500),
+        PyiCloudAPIResponseException("Authentication required for Account.", 500),
+        PyiCloudAPIResponseException("unavailable", 503),
+        MailWriteUncertain("submitted, outcome unknown"),  # pyicloud wraps any send-time failure
+        MailWriteRejected("rejected"),
+    ],
+)
+def test_no_retry_on_ambiguous_failures(exc):
+    api = MagicMock()
+    write = MagicMock(side_effect=exc)
+    loader = MagicMock(return_value=api)
+    provider = ApiProvider(loader)
+    provider.call(lambda api: None)  # session cached, so a retry would be possible
+    with pytest.raises(ToolError):
+        provider.call(lambda api: write())
+    assert write.call_count == 1
+    assert loader.call_count == 1
