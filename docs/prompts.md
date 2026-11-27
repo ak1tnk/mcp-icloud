@@ -39,7 +39,8 @@ https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md
 
 ## B. Setup when the agent runs on another machine
 
-For agents that run on a cloud computer or server (for example Grok, Muse or Qwen).
+For agents that run on a cloud computer or server (for example Grok, Muse or Qwen). You make a
+separate login for the agent on your own computer and give it the folder.
 
 **English**
 
@@ -47,10 +48,10 @@ For agents that run on a cloud computer or server (for example Grok, Muse or Qwe
 Set up mcp-icloud on this machine by following
 https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md
 Register it as an MCP server for yourself. Do not ask me for any password, 2FA code or
-app-specific password in chat. When you reach the steps I must do myself, tell me exactly what to
-run: I will SSH into this machine and run `mcp-icloud login` there (and `mcp-icloud mail-login`
-only if I want the IMAP mail backend). Then check `mcp-icloud status` and report.
-Please reply to me in English.
+app-specific password in chat. For the login, tell me the exact command to make a separate login
+for you on my own computer (MCP_ICLOUD_SESSION_DIR=~/mcp-icloud-<your name> mcp-icloud login).
+I will upload that folder to you. Put it at ~/.config/mcp-icloud with 700/600 permissions, then
+check `mcp-icloud status` and report. Please reply to me in English.
 ```
 
 **日本語**
@@ -58,10 +59,11 @@ Please reply to me in English.
 ```
 https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md の手順に従って、
 このマシンに mcp-icloud をセットアップし、あなた自身の MCP サーバーとして登録してください。
-パスワード・2FA コード・App 用パスワードをチャットで聞かないでください。私がやるべき手順に来たら、
-実行するコマンドを正確に教えてください。私がこのマシンに SSH して `mcp-icloud login` を実行します
-（IMAP のメールバックエンドを使いたい場合だけ `mcp-icloud mail-login` も実行します）。
-最後に `mcp-icloud status` を確認して報告してください。やり取りは日本語でお願いします。
+パスワード・2FA コード・App 用パスワードをチャットで聞かないでください。ログインについては、
+私のコンピューターであなた専用のログインを作るコマンド
+（MCP_ICLOUD_SESSION_DIR=~/mcp-icloud-<あなたの名前> mcp-icloud login）を正確に教えてください。
+できたフォルダをアップロードするので、~/.config/mcp-icloud に置いて権限を 700/600 にし、
+`mcp-icloud status` を確認して報告してください。やり取りは日本語でお願いします。
 ```
 
 **简体中文**
@@ -69,9 +71,10 @@ https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md の
 ```
 请按照 https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md 的步骤，
 在这台机器上安装 mcp-icloud，并把它注册为你自己的 MCP 服务器。不要在聊天中向我索要任何密码、
-双重认证验证码或 App 专用密码。到了需要我亲自操作的步骤时，请准确告诉我要运行的命令：
-我会 SSH 登录这台机器，在那里运行 `mcp-icloud login`（只有在我想使用 IMAP 邮件后端时，
-才会再运行 `mcp-icloud mail-login`）。最后检查 `mcp-icloud status` 并向我报告。请用简体中文和我交流。
+双重认证验证码或 App 专用密码。登录方面，请准确告诉我在我自己的电脑上为你单独创建登录的命令
+（MCP_ICLOUD_SESSION_DIR=~/mcp-icloud-<你的名字> mcp-icloud login）。我会把生成的文件夹上传给你。
+请把它放到 ~/.config/mcp-icloud，权限设为 700/600，然后检查 `mcp-icloud status` 并向我报告。
+请用简体中文和我交流。
 ```
 
 ---

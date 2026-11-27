@@ -94,13 +94,25 @@ All optional. Set them in the MCP server's environment.
 If your agent runs on another machine (a cloud computer or server), the login must be on that
 machine too. Two ways:
 
-1. **Log in there yourself** (recommended): connect with SSH and run `mcp-icloud login`.
-2. **Copy the login folder** from your computer: run `mcp-icloud login` on your computer, then copy
-   `~/.config/mcp-icloud` to the same place on the agent's machine. Keep it private
-   (`chmod 700`).
+1. **Make a separate login for the agent** (recommended). On your computer:
+
+   ```sh
+   MCP_ICLOUD_SESSION_DIR=~/mcp-icloud-muse mcp-icloud login   # one folder per agent
+   ```
+
+   Give the folder `~/mcp-icloud-muse` to the agent (upload it, zipped if needed, or copy it) and
+   ask it to put it at `~/.config/mcp-icloud` with `chmod 700` on the folder and `600` on the
+   files. The agent's login is separate from yours and can be revoked on its own:
+   `MCP_ICLOUD_SESSION_DIR=~/mcp-icloud-muse mcp-icloud logout`.
+2. **Log in there yourself**, if you can open a terminal or SSH on the agent's machine:
+   run `mcp-icloud login` there.
+
+Platforms that keep secrets away from programs (e.g. Muse) can't do the Apple sign-in
+themselves, so storing your Apple ID password there won't work; use the folder.
 
 Risk: the login folder gives full access to your iCloud account (Mail, Drive, Photos, …), not
-only what this server does. Only put it on machines you trust.
+only what this server does. Only put it on machines you trust. When it expires (weeks to
+months), repeat the same steps.
 
 To use Mail only, without the login folder: use an app-specific password there
 (`mcp-icloud mail-login`, or `MCP_ICLOUD_MAIL_USER` and `MCP_ICLOUD_MAIL_APP_PASSWORD`).

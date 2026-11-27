@@ -91,12 +91,22 @@ mcp-icloud status    # 检查登录状态
 
 如果智能体运行在另一台机器上（云端电脑或服务器），那台机器上也需要登录。有两种方法：
 
-1. **自己在那台机器上登录**（推荐）：用 SSH 连接，运行 `mcp-icloud login`。
-2. **从你的电脑复制登录文件夹**：在你的电脑上运行 `mcp-icloud login`，然后把 `~/.config/mcp-icloud`
-   复制到智能体所在机器的相同位置。注意不要让别人读取（`chmod 700`）。
+1. **为智能体单独创建一个登录**（推荐）。在你的电脑上：
+
+   ```sh
+   MCP_ICLOUD_SESSION_DIR=~/mcp-icloud-muse mcp-icloud login   # 每个智能体一个文件夹
+   ```
+
+   把文件夹 `~/mcp-icloud-muse` 交给智能体（上传，必要时先压缩成 zip，或直接复制），让它放到
+   `~/.config/mcp-icloud`，并对文件夹执行 `chmod 700`、对其中的文件执行 `600`。智能体的登录与你自己的
+   分开，可以单独撤销：`MCP_ICLOUD_SESSION_DIR=~/mcp-icloud-muse mcp-icloud logout`。
+2. **自己在那台机器上登录**：如果能在智能体的机器上打开终端或 SSH，就在那里运行 `mcp-icloud login`。
+
+不把密钥交给程序的平台（例如 Muse）无法自行完成 Apple 登录，所以把 Apple ID 密码存到那里是行不通的；
+请使用文件夹。
 
 风险：有了登录文件夹，就能使用你的整个 iCloud 账户（邮件、云盘、照片等），而不只是本服务器的功能。
-只放在你信任的机器上。
+只放在你信任的机器上。登录过期后（几周到几个月），重复同样的步骤即可。
 
 如果只想用邮件、不放登录文件夹：在那台机器上使用 App 专用密码
 （`mcp-icloud mail-login`，或 `MCP_ICLOUD_MAIL_USER` 和 `MCP_ICLOUD_MAIL_APP_PASSWORD`）。

@@ -12,6 +12,9 @@ and iCloud Mail (`mail_*`). Repository: <https://github.com/ak1tnk/mcp-icloud>.
 - **Never ask the human to type a password, 2FA code or app-specific password into the chat**, and
   never accept one if they offer it: tell them to use the terminal command instead. If one is
   pasted anyway, do not repeat it, and tell them to revoke it at <https://account.apple.com>.
+- **Never try a platform's secret placeholder or proxy token as a password.** Apple's sign-in
+  needs the real password inside the process, so a platform that keeps secrets away from
+  programs can't log in this way; use the login folder (step 4).
 - **Never print secrets.** Don't `cat` `mail.json`, `*.session`, `*.cookiejar` or env files, and
   don't echo environment variables that hold passwords.
 - **Never run `mcp-icloud login` or `mcp-icloud mail-login` for the human.** They are interactive
@@ -85,13 +88,23 @@ machine where the server runs:
 mcp-icloud login
 ```
 
-It asks for the Apple ID, password and 2FA code in the terminal. If the server runs on a VM you
-can't open a terminal on, explain the two options and the risk:
+It asks for the Apple ID, password and 2FA code in the terminal.
 
-1. SSH into the VM and run `mcp-icloud login` there (recommended).
-2. Run `mcp-icloud login` on their own computer, then copy the session directory
-   (`~/.config/mcp-icloud`) to the same path on the VM, keeping it private (`chmod 700` the
-   directory, `chmod 600` the files), or set `MCP_ICLOUD_SESSION_DIR` to where they put it.
+**If you can't give the human a terminal on the machine where the server runs** (a cloud VM, or a
+platform such as Muse), ask them to make a separate login for you on their own computer. Tell
+them exactly, with `<agent>` replaced by your name (e.g. `~/mcp-icloud-muse`):
+
+```
+MCP_ICLOUD_SESSION_DIR=~/mcp-icloud-<agent> mcp-icloud login
+```
+
+"Then upload that folder to me (zipped if this chat only takes files) or copy it to this machine.
+Don't send any password or code in the chat." When you have it, put it at `~/.config/mcp-icloud`
+(or point `MCP_ICLOUD_SESSION_DIR` at it), run `chmod 700` on the folder and `chmod 600` on the
+files in it, then run `mcp-icloud status`. Tell them they can revoke just this login with
+`MCP_ICLOUD_SESSION_DIR=~/mcp-icloud-<agent> mcp-icloud logout`, and that when it expires
+(weeks to months) they repeat the same steps. If they can SSH into the machine, running
+`mcp-icloud login` there also works.
 
 Risk to state plainly: the session directory is a signed-in icloud.com session. Anyone who can
 read it can use the whole iCloud account (Mail, Drive, Photos, Find My, …), not just what this
@@ -129,7 +142,7 @@ requires it, and try a read-only tool (`hme_list` or `mail_list_mailboxes`).
   filters not combined). The error says so; split the search or tell the human the IMAP backend
   removes the limit.
 - An error saying the session is missing or expired means the human must run
-  `mcp-icloud login` again (or re-copy the session). An error saying Mail is not configured means
+  `mcp-icloud login` again (or make and send a new login folder, as in step 4). An error saying Mail is not configured means
   the IMAP backend was forced without an app-specific password. Relay these to the human; don't
   try to work around them.
 
