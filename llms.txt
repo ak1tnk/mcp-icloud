@@ -1,0 +1,17 @@
+# mcp-icloud
+
+> Local MCP server (stdio, Python 3.11+, Linux and macOS) that lets AI agents manage iCloud+ Hide My Email addresses and read, organize and send iCloud Mail, all with one pyicloud login (mail via iCloud.com's web API, experimental; an IMAP/SMTP backend with an app-specific password is optional). Unofficial; not affiliated with Apple. MIT licensed.
+
+Install: `uv tool install git+https://github.com/ak1tnk/mcp-icloud`. Server command: `mcp-icloud serve`. The human runs `mcp-icloud login` (Apple ID, password, 2FA) in a terminal, and optionally `mcp-icloud mail-login` (app-specific password, IMAP backend); agents must never ask for these secrets in chat. Hide My Email tools: hme_list, hme_generate, hme_reserve, hme_update, hme_deactivate, hme_reactivate (no delete). Mail tools: mail_list_mailboxes, mail_search, mail_read, mail_download_attachment, mail_set_flags, mail_move, mail_archive, mail_trash (move to Trash only), mail_send, mail_reply, mail_forward (send immediately), mail_save_draft.
+
+## Docs
+
+- [Agent setup guide](https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md): step-by-step install, registration, checks, upgrade and uninstall, written for an AI agent to follow, with hard safety rules
+- [README (English)](https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/README.md): features, configuration (environment variables), registering with MCP clients, Linux VMs, security, send policy
+- [Prompts](https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/prompts.md): copy-paste prompts in English, Japanese and Chinese for setup, everyday tasks, and a system-prompt snippet
+
+## Optional
+
+- [README (日本語)](https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/README.ja.md)
+- [README (简体中文)](https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/README.zh-CN.md)
+- [Source](https://github.com/ak1tnk/mcp-icloud)
