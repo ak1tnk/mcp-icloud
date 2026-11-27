@@ -13,8 +13,10 @@ from pyicloud.exceptions import (
     PyiCloudFailedLoginException,
 )
 
-# HTTP status codes Apple uses for an expired or untrusted web session.
-_AUTH_STATUS_CODES = {401, 421, 450}
+# Status codes Apple uses for an expired or untrusted web session (pyicloud may pass int or str).
+_AUTH_STATUS_CODES = {"401", "421", "450"}
+# pyicloud rewrites the reason to this for 409/421/450/500 auth failures.
+_AUTH_REQUIRED_REASON = "Authentication required for Account."
 
 
 def not_logged_in_message(directory: Path) -> str:
@@ -47,7 +49,7 @@ def is_auth_error(exc: BaseException) -> bool:
     ):
         return True
     if isinstance(exc, PyiCloudAPIResponseException):
-        return getattr(exc, "code", None) in _AUTH_STATUS_CODES
+        return str(exc.code) in _AUTH_STATUS_CODES or exc.reason == _AUTH_REQUIRED_REASON
     return False
 
 
