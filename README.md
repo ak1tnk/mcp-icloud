@@ -1,17 +1,21 @@
 # mcp-icloud
 
 A small local [MCP](https://modelcontextprotocol.io) server (stdio) that lets an AI agent manage
-iCloud+ **Hide My Email** addresses. It wraps [pyicloud](https://github.com/timlaing/pyicloud).
+iCloud+ **Hide My Email** addresses (via [pyicloud](https://github.com/timlaing/pyicloud)) and
+read and send **iCloud Mail** (via IMAP/SMTP).
 
 - Runs on Linux and macOS, headless (no TTY, no browser, no Keychain).
-- The server never sees your password: you log in once with a separate command, and the server
-  reuses the stored session.
-- Hide My Email only for now. Deleting addresses is intentionally not supported.
+- The server never sees your Apple ID password: for Hide My Email you log in once with a
+  separate command and the server reuses the stored session; Mail uses an app-specific password.
+- Deleting Hide My Email addresses is intentionally not supported, and Mail "delete" only moves
+  messages to Trash.
 
 > Unofficial. Not affiliated with Apple. It uses the same private web APIs as icloud.com, which
 > Apple can change at any time.
 
 ## Tools
+
+### Hide My Email
 
 | Tool | What it does |
 | --- | --- |
@@ -24,12 +28,30 @@ iCloud+ **Hide My Email** addresses. It wraps [pyicloud](https://github.com/timl
 
 Addresses are identified by `anonymous_id`, as returned by `hme_list` / `hme_reserve`.
 
+### Mail
+
+| Tool | What it does |
+| --- | --- |
+| `mail_list_mailboxes` | List mailboxes (folders) and their special use (Drafts, Sent, Trash, …) |
+| `mail_search` | Search a mailbox by sender, recipient, subject, text, date range, unread, flagged |
+| `mail_read` | Read one message: headers, text body (HTML converted to text), attachment list |
+| `mail_download_attachment` | Save one attachment to a new file (size-limited) |
+| `mail_set_flags` | Mark messages read/unread and flagged/unflagged |
+| `mail_move` / `mail_archive` | Move messages to another mailbox / to Archive |
+| `mail_trash` | Move messages to Trash (never deletes permanently) |
+| `mail_send` | Send a new message (optional attachments) |
+| `mail_reply` / `mail_forward` | Reply (or reply all) / forward an existing message |
+| `mail_save_draft` | Save a message to Drafts without sending |
+
+Messages are identified by mailbox name + `uid`, as returned by `mail_search`.
+
 ## Requirements
 
 - Python 3.11–3.13
 - [uv](https://docs.astral.sh/uv/) (recommended) or pip
-- An Apple ID with iCloud+ and two-factor authentication by code (trusted device or SMS).
-  Accounts that require a hardware security key are not supported yet.
+- Hide My Email: an Apple ID with iCloud+ and two-factor authentication by code (trusted device
+  or SMS). Accounts that require a hardware security key are not supported yet.
+- Mail: an iCloud Mail address and an app-specific password.
 
 ## Install
 
@@ -81,6 +103,36 @@ tool returns an error telling you to run `mcp-icloud login` again (and re-copy t
 you use option 2). Apple does not document how long that trust lasts; reports for similar tools
 range from weeks to a few months.
 
+## Set up Mail
+
+Mail does not use the pyicloud session, so it works on headless machines without any 2FA step
+and does not expire with it.
+
+1. Create an app-specific password: sign in at <https://account.apple.com>, open
+   **Sign-In and Security → App-Specific Passwords**, and generate one (it looks like
+   `xxxx-xxxx-xxxx-xxxx`).
+2. Give the server these environment variables:
+
+| Variable | Meaning |
+| --- | --- |
+| `MCP_ICLOUD_MAIL_USER` | Your iCloud Mail address (`…@icloud.com`, `@me.com`, or a custom domain). Also the default From |
+| `MCP_ICLOUD_MAIL_APP_PASSWORD` | The app-specific password |
+| `MCP_ICLOUD_MAIL_FROM_ALIASES` | Optional, comma-separated: other addresses allowed as From (iCloud aliases, custom-domain addresses) |
+| `MCP_ICLOUD_SEND_ALLOWLIST` | Optional, comma-separated addresses and `@domain` entries. Unset = no restriction |
+| `MCP_ICLOUD_MAIL_MAX_ATTACHMENT_MB` | Optional size limit for attachments sent or downloaded (default 20) |
+
+Servers: `imap.mail.me.com:993` (TLS) and `smtp.mail.me.com:587` (STARTTLS).
+
+### Send policy
+
+- **By default there is no restriction: any agent using this server can send mail as your
+  account, to anyone, immediately.** Only give the server to agents you trust with that.
+- If `MCP_ICLOUD_SEND_ALLOWLIST` is set, `mail_send`, `mail_reply` and `mail_forward` refuse any
+  message with a recipient (To, Cc or Bcc) that is not listed; nothing is sent and no draft is
+  saved. `mail_save_draft` is not restricted.
+- From must be `MCP_ICLOUD_MAIL_USER` or one of `MCP_ICLOUD_MAIL_FROM_ALIASES`; anything else is
+  rejected.
+
 ## Register the server
 
 The server command is `mcp-icloud serve` (or just `mcp-icloud`). Use the absolute path if the
@@ -92,7 +144,13 @@ Claude Code:
 claude mcp add icloud -- mcp-icloud serve
 # with a non-default session directory:
 claude mcp add icloud -e MCP_ICLOUD_SESSION_DIR=/path/to/session -- mcp-icloud serve
+# with Mail:
+claude mcp add icloud -e MCP_ICLOUD_MAIL_USER=you@example.com \
+  -e MCP_ICLOUD_MAIL_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx -- mcp-icloud serve
 ```
+
+Note that `-e` values are stored in plain text in the client's config file; protect it like the
+session directory.
 
 Orca bots:
 
@@ -116,6 +174,12 @@ Any other MCP client: run `mcp-icloud serve` over stdio.
   is the same session.
 - The agent can create and deactivate addresses but not delete them. Deactivating stops
   forwarding; `hme_reactivate` undoes it.
+- **The app-specific password** gives full IMAP/SMTP access to your iCloud Mail: reading, moving
+  and sending as you. It is read from the environment only, never logged, and scrubbed from
+  error messages. Revoke it any time at <https://account.apple.com> (App-Specific Passwords); it
+  cannot be used to sign in to your Apple ID or change account settings.
+- Mail tools that take file paths (`attachments`, `mail_download_attachment`) read and write
+  files as the user running the server. Downloads never overwrite an existing file.
 
 ## Development
 
@@ -126,14 +190,15 @@ uv run ruff check . && uv run ruff format --check .
 uv run mypy
 ```
 
-Layout: `src/mcp_icloud/services/<service>.py` holds one iCloud service's tools and exposes
-`register(server, provider)`; `server.py` wires them up; `session.py` loads the stored session;
-`login.py` holds the interactive commands.
+Layout: each iCloud service lives under `src/mcp_icloud/services/` (`hidemyemail.py`,
+`mail/`) and exposes a `register(...)` function; `server.py` wires them up; `session.py` loads the
+stored pyicloud session; `login.py` holds the interactive commands.
 
 ## 日本語メモ
 
-iCloud+ の「メールを非公開」アドレスを AI エージェントから一覧・生成・予約・ラベル編集・停止/再開する
-ローカル MCP サーバーです。パスワードと 2FA はターミナルで `mcp-icloud login` を一度実行して入力し、
+iCloud+ の「メールを非公開」アドレスを AI エージェントから一覧・生成・予約・ラベル編集・停止/再開し、
+iCloud メールを IMAP/SMTP（App 用パスワード）で検索・閲覧・整理・送信するローカル MCP サーバーです。
+送信は既定で無制限です（`MCP_ICLOUD_SEND_ALLOWLIST` で宛先を制限可能）。パスワードと 2FA はターミナルで `mcp-icloud login` を一度実行して入力し、
 サーバーは保存されたセッションだけを使います。Linux VM で使う場合は VM に SSH して login するか、
 セッションディレクトリをコピーしてください。セッションファイルはパスワード同等に扱ってください。
 
