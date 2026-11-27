@@ -16,7 +16,8 @@ from typing import TYPE_CHECKING, Any, cast
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
-from mcp_icloud.services.mail import imap
+from mcp_icloud.services.mail import imap, web_reads
+from mcp_icloud.services.mail.backend import selected_backend
 from mcp_icloud.services.mail.config import MailConfig
 from mcp_icloud.services.mail.errors import mail_errors
 
@@ -121,6 +122,8 @@ def register(server: MCPServer, provider: ApiProvider) -> None:
     def mail_list_mailboxes() -> dict[str, Any]:
         """List mailboxes and their special uses."""
         with mail_errors():
+            if selected_backend() == "web":
+                return web_reads.list_mailboxes(provider)
             cfg = MailConfig.from_env()
             with imap.connect(cfg) as conn:
                 return {
@@ -151,6 +154,20 @@ def register(server: MCPServer, provider: ApiProvider) -> None:
     ) -> dict[str, Any]:
         """Search mail and return the newest matching message headers."""
         with mail_errors():
+            if selected_backend() == "web":
+                return web_reads.search(
+                    provider,
+                    mailbox=mailbox,
+                    sender=sender,
+                    recipient=recipient,
+                    subject=subject,
+                    text=text,
+                    since=since,
+                    before=before,
+                    unread_only=unread_only,
+                    flagged_only=flagged_only,
+                    limit=limit,
+                )
             cfg = MailConfig.from_env()
             with imap.connect(cfg) as conn:
                 if not 1 <= limit <= 100:
@@ -259,6 +276,10 @@ def register(server: MCPServer, provider: ApiProvider) -> None:
     ) -> dict[str, Any]:
         """Read a message and list its attachments. Optionally mark it read."""
         with mail_errors():
+            if selected_backend() == "web":
+                return web_reads.read(
+                    provider, mailbox=mailbox, uid=uid, max_chars=max_chars, mark_read=mark_read
+                )
             cfg = MailConfig.from_env()
             with imap.connect(cfg) as conn:
                 _uids([uid])
@@ -302,6 +323,10 @@ def register(server: MCPServer, provider: ApiProvider) -> None:
     def mail_download_attachment(mailbox: str, uid: int, index: int, path: str) -> dict[str, Any]:
         """Download an attachment to a new absolute file with private permissions."""
         with mail_errors():
+            if selected_backend() == "web":
+                return web_reads.download_attachment(
+                    provider, mailbox=mailbox, uid=uid, index=index, path=path
+                )
             cfg = MailConfig.from_env()
             with imap.connect(cfg) as conn:
                 _uids([uid])
@@ -333,6 +358,10 @@ def register(server: MCPServer, provider: ApiProvider) -> None:
     ) -> dict[str, Any]:
         """Set or clear the read and flagged status of messages."""
         with mail_errors():
+            if selected_backend() == "web":
+                return web_reads.set_flags(
+                    provider, mailbox=mailbox, uids=uids, seen=seen, flagged=flagged
+                )
             cfg = MailConfig.from_env()
             with imap.connect(cfg) as conn:
                 sequence = _uids(uids)
@@ -353,6 +382,8 @@ def register(server: MCPServer, provider: ApiProvider) -> None:
     def mail_move(mailbox: str, uids: list[int], destination: str) -> dict[str, Any]:
         """Move messages to an existing mailbox."""
         with mail_errors():
+            if selected_backend() == "web":
+                return web_reads.move(provider, mailbox=mailbox, uids=uids, destination=destination)
             cfg = MailConfig.from_env()
             with imap.connect(cfg) as conn:
                 return _move(conn, mailbox, uids, destination)
@@ -361,6 +392,8 @@ def register(server: MCPServer, provider: ApiProvider) -> None:
     def mail_archive(mailbox: str, uids: list[int]) -> dict[str, Any]:
         """Move messages to the Archive mailbox."""
         with mail_errors():
+            if selected_backend() == "web":
+                return web_reads.archive(provider, mailbox=mailbox, uids=uids)
             cfg = MailConfig.from_env()
             with imap.connect(cfg) as conn:
                 return _move(
@@ -371,6 +404,8 @@ def register(server: MCPServer, provider: ApiProvider) -> None:
     def mail_trash(mailbox: str, uids: list[int]) -> dict[str, Any]:
         """Move messages to Trash without deleting them permanently."""
         with mail_errors():
+            if selected_backend() == "web":
+                return web_reads.trash(provider, mailbox=mailbox, uids=uids)
             cfg = MailConfig.from_env()
             with imap.connect(cfg) as conn:
                 return _move(
