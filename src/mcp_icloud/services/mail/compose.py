@@ -47,12 +47,16 @@ def _unique(addresses: list[str]) -> list[str]:
     return result
 
 
-def _files(paths: list[str] | None) -> list[tuple[bytes, str, str | None]]:
+def _files(paths: list[str] | None, limit: int) -> list[tuple[bytes, str, str | None]]:
     result: list[tuple[bytes, str, str | None]] = []
+    total = 0
     for value in paths or []:
         path = Path(value)
         if not path.is_absolute() or not path.is_file():
             raise ToolError("Attachments must be absolute paths to existing regular files")
+        total += path.stat().st_size
+        if total > limit:  # checked before reading, so a huge file is never loaded
+            raise ToolError("Total attachment bytes exceed the configured limit")
         result.append(
             (
                 path.read_bytes(),
@@ -146,7 +150,9 @@ def register(server: MCPServer) -> None:
             cfg = MailConfig.from_env()
             sender = _sender(cfg, from_address)
             to, cc, bcc = _addresses(to), _addresses(cc), _addresses(bcc)
-            msg = _message(cfg, sender, to, cc, subject, body, _files(attachments))
+            msg = _message(
+                cfg, sender, to, cc, subject, body, _files(attachments, cfg.max_attachment_bytes)
+            )
             return _send(cfg, msg, _unique(to + cc + bcc))
 
     @server.tool()
@@ -184,7 +190,9 @@ def register(server: MCPServer) -> None:
                     f"\n\nOn {original.get('Date', '')}, {original.get('From', '')} wrote:\n"
                     + "\n".join("> " + line for line in text.splitlines())
                 )
-            msg = _message(cfg, sender, to, cc, subject, body, _files(attachments))
+            msg = _message(
+                cfg, sender, to, cc, subject, body, _files(attachments, cfg.max_attachment_bytes)
+            )
             message_id = str(original.get("Message-ID", ""))
             if message_id:
                 msg["In-Reply-To"] = message_id
@@ -245,9 +253,12 @@ def register(server: MCPServer) -> None:
         with mail_errors():
             cfg = MailConfig.from_env()
             sender = _sender(cfg, from_address)
-            to, cc = _addresses(to), _addresses(cc)
-            _addresses(bcc)
-            msg = _message(cfg, sender, to, cc, subject, body, _files(attachments))
+            to, cc, bcc_list = _addresses(to), _addresses(cc), _addresses(bcc)
+            msg = _message(
+                cfg, sender, to, cc, subject, body, _files(attachments, cfg.max_attachment_bytes)
+            )
+            if bcc_list:  # kept in the draft so it is not lost; drafts are never sent from here
+                msg["Bcc"] = ", ".join(bcc_list)
             with imap.connect(cfg) as conn:
                 mailbox = imap.special_mailbox(conn, "\\Drafts", "Drafts")
                 imap.append(conn, mailbox, "(\\Draft \\Seen)", msg)

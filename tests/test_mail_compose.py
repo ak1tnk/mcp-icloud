@@ -229,7 +229,7 @@ async def test_draft(mail, monkeypatch):
     compose.imap.special_mailbox.assert_called_once_with(conn, "\\Drafts", "Drafts")
     args = compose.imap.append.call_args.args
     assert args[:3] == (conn, "My Drafts", "(\\Draft \\Seen)")
-    assert args[3]["Bcc"] is None
+    assert args[3]["Bcc"] == "b@example.org"
     assert result.structured_content == {
         "saved_as_draft": True,
         "mailbox": "My Drafts",
