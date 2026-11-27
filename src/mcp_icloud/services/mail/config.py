@@ -98,3 +98,12 @@ class MailConfig:
             if max_mb
             else DEFAULT_MAX_ATTACHMENT_MB * 1024 * 1024,
         )
+
+
+def policy_settings() -> tuple[tuple[str, ...], tuple[str, ...], int]:
+    max_mb = os.environ.get(MAX_ATTACHMENT_ENV, "").strip()
+    return (
+        _csv(os.environ.get(FROM_ALIASES_ENV)),
+        _csv(os.environ.get(SEND_ALLOWLIST_ENV)),
+        int(float(max_mb) * 1024 * 1024) if max_mb else DEFAULT_MAX_ATTACHMENT_MB * 1024 * 1024,
+    )
