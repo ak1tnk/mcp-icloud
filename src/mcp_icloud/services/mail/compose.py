@@ -8,7 +8,7 @@ import ssl
 from email.message import EmailMessage
 from email.utils import formatdate, getaddresses, make_msgid
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
@@ -16,6 +16,9 @@ from mcp.server.mcpserver.exceptions import ToolError
 from mcp_icloud.services.mail import imap
 from mcp_icloud.services.mail.config import SMTP_HOST, SMTP_PORT, MailConfig
 from mcp_icloud.services.mail.errors import mail_errors
+
+if TYPE_CHECKING:
+    from mcp_icloud.server import ApiProvider
 
 
 def _sender(cfg: MailConfig, address: str | None) -> str:
@@ -134,7 +137,7 @@ def _text(msg: EmailMessage) -> str | None:
     return str(part.get_content()) if part is not None else None
 
 
-def register(server: MCPServer) -> None:
+def register(server: MCPServer, provider: ApiProvider) -> None:
     @server.tool()
     def mail_send(
         to: list[str],

@@ -11,7 +11,7 @@ from email.parser import BytesParser
 from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
@@ -19,6 +19,9 @@ from mcp.server.mcpserver.exceptions import ToolError
 from mcp_icloud.services.mail import imap
 from mcp_icloud.services.mail.config import MailConfig
 from mcp_icloud.services.mail.errors import mail_errors
+
+if TYPE_CHECKING:
+    from mcp_icloud.server import ApiProvider
 
 SPECIAL = ("\\Inbox", "\\Drafts", "\\Sent", "\\Trash", "\\Junk", "\\Archive", "\\All", "\\Flagged")
 
@@ -113,7 +116,7 @@ def _move(conn: Any, mailbox: str, uids: list[int], destination: str) -> dict[st
     return {"mailbox": mailbox, "uids": uids, "destination": destination}
 
 
-def register(server: MCPServer) -> None:
+def register(server: MCPServer, provider: ApiProvider) -> None:
     @server.tool()
     def mail_list_mailboxes() -> dict[str, Any]:
         """List mailboxes and their special uses."""

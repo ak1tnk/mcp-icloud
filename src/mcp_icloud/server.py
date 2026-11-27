@@ -52,8 +52,9 @@ def build_server(provider: ApiProvider | None = None) -> MCPServer:
             "save it; there is no delete) and iCloud Mail over IMAP/SMTP (mail_*)."
         ),
     )
-    hidemyemail.register(server, provider or ApiProvider())
-    mail.register(server)
+    provider = provider or ApiProvider()
+    hidemyemail.register(server, provider)
+    mail.register(server, provider)
     return server
 
 
