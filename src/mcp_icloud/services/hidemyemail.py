@@ -17,7 +17,7 @@ def _normalize(raw: dict[str, Any]) -> dict[str, Any]:
         raw = raw["hme"]
     timestamp = raw.get("createTimestamp")
     created_at = None
-    if type(timestamp) is int:
+    if type(timestamp) is int and timestamp > 0:
         created_at = datetime.fromtimestamp(timestamp / 1000, UTC).isoformat()
     return {
         "email": raw.get("hme"),
@@ -61,7 +61,14 @@ def register(server: MCPServer, provider: ApiProvider) -> None:
         raw = provider.call(lambda api: api.hidemyemail.reserve(email, label, note))
         if not raw:
             raise ToolError("iCloud did not reserve the address")
-        return _normalize(raw)
+        reserved = _normalize(raw)
+        # The reserve response lacks forward_to and created_at; re-read the full record.
+        anonymous_id = reserved["anonymous_id"]
+        if anonymous_id:
+            full = provider.call(lambda api: api.hidemyemail[anonymous_id])
+            if full:
+                return _normalize(full)
+        return reserved
 
     @server.tool()
     def hme_update(

@@ -13,7 +13,7 @@ RAW = {
     "isActive": True,
     "forwardToEmail": "owner@example.com",
     "domain": "icloud.com",
-    "createTimestamp": 0,
+    "createTimestamp": 1700000000000,
 }
 ALIAS = {
     "email": "alias@example.com",
@@ -23,7 +23,7 @@ ALIAS = {
     "active": True,
     "forward_to": "owner@example.com",
     "domain": "icloud.com",
-    "created_at": "1970-01-01T00:00:00+00:00",
+    "created_at": "2023-11-14T22:13:20+00:00",
 }
 
 
@@ -128,9 +128,42 @@ async def test_empty_required(api, tool, args):
 
 
 @pytest.mark.anyio
-@pytest.mark.parametrize("timestamp", [None, "0", 0.5, True])
+@pytest.mark.parametrize("timestamp", [None, "0", 0.5, True, 0])
 async def test_missing_fields_and_timestamp(api, timestamp):
     api.hidemyemail.reserve.return_value = {"createTimestamp": timestamp}
     async with Client(build_server(ApiProvider(lambda: api))) as client:
         result = await client.call_tool("hme_reserve", {"email": "x", "label": "y"})
         assert result.structured_content == dict.fromkeys(ALIAS)
+
+
+# Shape seen live: reserve omits forwardToEmail and returns createTimestamp 0.
+RESERVE_RESPONSE = {
+    "hme": {
+        "hme": RAW["hme"],
+        "anonymousId": "id",
+        "label": "old",
+        "note": "memo",
+        "isActive": True,
+        "domain": "icloud.com",
+        "createTimestamp": 0,
+    }
+}
+
+
+@pytest.mark.anyio
+async def test_reserve_rereads_full_record(api):
+    api.hidemyemail.reserve.return_value = RESERVE_RESPONSE
+    api.hidemyemail.__getitem__.return_value = {"hme": RAW}
+    async with Client(build_server(ApiProvider(lambda: api))) as client:
+        result = await client.call_tool("hme_reserve", {"email": RAW["hme"], "label": "old"})
+        assert result.structured_content == ALIAS
+    api.hidemyemail.__getitem__.assert_called_once_with("id")
+
+
+@pytest.mark.anyio
+async def test_reserve_falls_back_without_epoch(api):
+    api.hidemyemail.reserve.return_value = RESERVE_RESPONSE
+    api.hidemyemail.__getitem__.return_value = {}
+    async with Client(build_server(ApiProvider(lambda: api))) as client:
+        result = await client.call_tool("hme_reserve", {"email": RAW["hme"], "label": "old"})
+        assert result.structured_content == {**ALIAS, "forward_to": None, "created_at": None}
