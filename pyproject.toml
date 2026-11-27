@@ -1,7 +1,7 @@
 [project]
 name = "mcp-icloud"
 version = "0.1.0"
-description = "Local MCP server (stdio) for iCloud, built on pyicloud. Phase 1: Hide My Email."
+description = "Local MCP server (stdio) for iCloud Hide My Email and iCloud Mail, built on pyicloud."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"

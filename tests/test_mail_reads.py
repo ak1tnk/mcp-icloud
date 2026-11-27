@@ -198,3 +198,14 @@ async def test_uid_validation(conn, uids):
             "mail_set_flags", {"mailbox": "INBOX", "uids": uids, "seen": True}
         )
         assert result.is_error
+
+
+@pytest.mark.anyio
+async def test_list_hides_icloud_category_folders(conn):
+    conn.list.return_value = (
+        "OK",
+        [b'() "/" INBOX', b'() "/" "INBOX/$category$_Promotions"', b'() "/" "$category$_HI"'],
+    )
+    async with Client(build_server()) as client:
+        result = await client.call_tool("mail_list_mailboxes")
+    assert [b["name"] for b in result.structured_content["mailboxes"]] == ["INBOX"]

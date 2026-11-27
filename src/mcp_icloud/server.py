@@ -27,9 +27,7 @@ class ApiProvider:
     def call(self, fn: Callable[[PyiCloudService], T]) -> T:
         with self._lock:
             try:
-                if self._api is None:
-                    self._api = self._loader()
-                return fn(self._api)
+                return self._call(fn)
             except Exception as exc:
                 if is_auth_error(exc):
                     self._api = None
@@ -43,13 +41,28 @@ class ApiProvider:
                     raise ToolError(f"iCloud request failed: {type(exc).__name__}: {exc}") from exc
                 raise
 
+    def _call(self, fn: Callable[[PyiCloudService], T]) -> T:
+        if self._api is None:
+            self._api = self._loader()
+            return fn(self._api)
+        try:
+            return fn(self._api)
+        except Exception as exc:
+            if not is_auth_error(exc):
+                raise
+        # The cached web cookies expired; reloading renews them from the stored session and
+        # trust tokens without a password. The rejected request did not run, so retry once.
+        self._api = self._loader()
+        return fn(self._api)
+
 
 def build_server(provider: ApiProvider | None = None) -> MCPServer:
     server = MCPServer(
         "mcp-icloud",
         instructions=(
             "Manages iCloud Hide My Email addresses (hme_*: generating a candidate does not "
-            "save it; there is no delete) and iCloud Mail over IMAP/SMTP (mail_*)."
+            "save it; there is no delete) and iCloud Mail (mail_*: trash moves to Trash; "
+            "send, reply and forward send immediately)."
         ),
     )
     provider = provider or ApiProvider()

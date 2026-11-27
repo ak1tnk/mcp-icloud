@@ -136,6 +136,7 @@ def register(server: MCPServer, provider: ApiProvider) -> None:
                             "flags": list(b.flags),
                         }
                         for b in imap.list_mailboxes(conn)
+                        if "$category$" not in b.name  # iCloud-internal, always empty
                     ]
                 }
 

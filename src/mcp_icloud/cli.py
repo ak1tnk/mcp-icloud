@@ -13,7 +13,9 @@ def main(argv: list[str] | None = None) -> int:
     login.add_argument("--apple-id", help="Apple ID email (prompted if omitted)")
     sub.add_parser("status", help="check whether the stored session is usable")
     sub.add_parser("logout", help="sign the session out at Apple and delete local session files")
-    mail_login = sub.add_parser("mail-login", help="configure Mail interactively")
+    mail_login = sub.add_parser(
+        "mail-login", help="store an app-specific password for the IMAP mail backend"
+    )
     mail_login.add_argument("--user", help="iCloud Mail address")
     sub.add_parser("mail-logout", help="remove the stored Mail password")
     args = parser.parse_args(argv)

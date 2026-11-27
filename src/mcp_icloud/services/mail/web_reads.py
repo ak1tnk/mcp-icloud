@@ -27,6 +27,7 @@ def list_mailboxes(provider: ApiProvider) -> dict[str, Any]:
                 "mailboxes": [
                     {"name": web.display_name(b), "special_use": web.special_use(b), "flags": []}
                     for b in api.mail.folders()
+                    if "$category$" not in web.display_name(b)  # iCloud-internal, always empty
                 ]
             }
 

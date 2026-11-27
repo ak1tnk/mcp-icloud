@@ -295,3 +295,13 @@ def test_stream_failure_removes_file(setup, tmp_path):
     with pytest.raises(ToolError, match="fake stream failure"):
         web_reads.download_attachment(setup[0], mailbox="INBOX", uid=7, index=0, path=str(target))
     assert not target.exists()
+
+
+def test_list_hides_icloud_category_folders(setup):
+    provider, service, _, boxes = setup
+    service.folders.return_value = boxes + [
+        MailFolder.model_validate({"identifier": n, "name": n, "uidValidity": 1})
+        for n in ("INBOX/$category$_Promotions", "$category$_HI")
+    ]
+    names = [b["name"] for b in web_reads.list_mailboxes(provider)["mailboxes"]]
+    assert names == ["INBOX", "Archive", "Deleted Messages"]

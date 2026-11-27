@@ -92,3 +92,26 @@ def test_concurrent_calls_share_serialized_session():
         futures = [executor.submit(call) for _ in range(2)]
         assert [future.result(timeout=5) for future in futures] == ["ok", "ok"]
     loader.assert_called_once_with()
+
+
+def test_expired_cached_session_is_renewed_once():
+    stale, fresh = MagicMock(), MagicMock()
+    stale.hidemyemail.generate.side_effect = PyiCloudAPIResponseException("expired", 421)
+    fresh.hidemyemail.generate.return_value = "new@example.com"
+    loader = MagicMock(side_effect=[stale, fresh])
+    provider = ApiProvider(loader)
+    provider.call(lambda api: None)  # caches the stale session
+    assert provider.call(lambda api: api.hidemyemail.generate()) == "new@example.com"
+    assert loader.call_count == 2
+
+
+def test_renewal_failure_reports_login(session_dir: Path):
+    from mcp.server.mcpserver.exceptions import ToolError
+
+    stale = MagicMock()
+    stale.hidemyemail.generate.side_effect = PyiCloudAPIResponseException("expired", 421)
+    loader = MagicMock(side_effect=[stale, NotLoggedInError(session_dir)])
+    provider = ApiProvider(loader)
+    provider.call(lambda api: None)
+    with pytest.raises(ToolError, match="mcp-icloud login"):
+        provider.call(lambda api: api.hidemyemail.generate())

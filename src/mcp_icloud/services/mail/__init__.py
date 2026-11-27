@@ -1,4 +1,4 @@
-"""iCloud Mail over IMAP/SMTP with an app-specific password (no pyicloud session needed)."""
+"""iCloud Mail: web backend (pyicloud session) or IMAP/SMTP backend (app-specific password)."""
 
 from __future__ import annotations
 
