@@ -12,7 +12,7 @@ def main(argv: list[str] | None = None) -> int:
     login = sub.add_parser("login", help="log in interactively (Apple ID, password, 2FA)")
     login.add_argument("--apple-id", help="Apple ID email (prompted if omitted)")
     sub.add_parser("status", help="check whether the stored session is usable")
-    sub.add_parser("logout", help="delete the stored session files")
+    sub.add_parser("logout", help="sign the session out at Apple and delete local session files")
     args = parser.parse_args(argv)
 
     if args.command == "login":
