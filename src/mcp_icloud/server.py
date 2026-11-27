@@ -12,7 +12,7 @@ from pyicloud import PyiCloudService
 from pyicloud.exceptions import PyiCloudException
 
 from mcp_icloud import config
-from mcp_icloud.services import hidemyemail
+from mcp_icloud.services import hidemyemail, mail
 from mcp_icloud.session import NotLoggedInError, is_auth_error, load_api
 
 T = TypeVar("T")
@@ -48,11 +48,12 @@ def build_server(provider: ApiProvider | None = None) -> MCPServer:
     server = MCPServer(
         "mcp-icloud",
         instructions=(
-            "Manages iCloud Hide My Email addresses. "
-            "Generating a candidate does not save it; there is no delete tool."
+            "Manages iCloud Hide My Email addresses (hme_*: generating a candidate does not "
+            "save it; there is no delete) and iCloud Mail over IMAP/SMTP (mail_*)."
         ),
     )
     hidemyemail.register(server, provider or ApiProvider())
+    mail.register(server)
     return server
 
 

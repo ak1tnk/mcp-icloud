@@ -19,7 +19,7 @@ async def test_tools_and_lazy_build():
     loader.assert_not_called()
     async with Client(server) as client:
         tools = await client.list_tools()
-        assert {tool.name for tool in tools.tools} == {
+        assert {tool.name for tool in tools.tools if tool.name.startswith("hme_")} == {
             "hme_list",
             "hme_generate",
             "hme_reserve",
