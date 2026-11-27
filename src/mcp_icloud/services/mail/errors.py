@@ -10,12 +10,15 @@ from contextlib import contextmanager
 
 from mcp.server.mcpserver.exceptions import ToolError
 
-from mcp_icloud.services.mail.config import PASSWORD_ENV, MailNotConfigured
+from mcp_icloud.services.mail.config import PASSWORD_ENV, MailNotConfigured, _stored_login
 
 
 def _scrub(text: str) -> str:
     password = os.environ.get(PASSWORD_ENV, "").strip()
-    return text.replace(password, "***") if password else text
+    if password:
+        text = text.replace(password, "***")
+    stored = _stored_login()
+    return text.replace(stored[1], "***") if stored else text
 
 
 @contextmanager

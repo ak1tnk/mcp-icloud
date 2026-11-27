@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import getpass
+import imaplib
+import os
+import smtplib
+import ssl
 import sys
 
 from pyicloud import PyiCloudService
@@ -16,6 +20,15 @@ from pyicloud.exceptions import (
 )
 
 from mcp_icloud import config
+from mcp_icloud.services.mail.config import (
+    IMAP_HOST,
+    IMAP_PORT,
+    SMTP_HOST,
+    SMTP_PORT,
+    USER_ENV,
+    configured_mail,
+    write_mail_login,
+)
 from mcp_icloud.session import NotLoggedInError, load_api
 
 
@@ -100,6 +113,8 @@ def login_command(apple_id: str | None) -> int:
 
 
 def status_command() -> int:
+    mail = configured_mail()
+    print(f"Mail: configured for {mail[0]} ({mail[1]})" if mail else "Mail: not configured")
     try:
         api = load_api()
     except NotLoggedInError as exc:
@@ -141,4 +156,42 @@ def logout_command() -> int:
             "To revoke it at Apple, change the Apple ID password or review signed-in devices "
             "at https://account.apple.com."
         )
+    return 0
+
+
+def mail_login_command(user: str | None) -> int:
+    if user is None:
+        default = os.environ.get(USER_ENV) or config.stored_apple_id(config.session_dir()) or ""
+        user = input(f"iCloud Mail address [{default}]: ").strip() or default
+    if not user:
+        print("iCloud Mail address must not be empty.", file=sys.stderr)
+        return 2
+    password = getpass.getpass("App-specific password: ")
+    try:
+        imap = imaplib.IMAP4_SSL(
+            IMAP_HOST, IMAP_PORT, ssl_context=ssl.create_default_context(), timeout=30
+        )
+        imap.login(user, password)
+        imap.logout()
+        smtp = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30)
+        smtp.starttls(context=ssl.create_default_context())
+        smtp.login(user, password)
+        smtp.quit()
+    except (imaplib.IMAP4.error, smtplib.SMTPException, OSError) as exc:
+        error = str(exc).replace(password, "***") if password else str(exc)
+        print(f"Could not verify the Mail login: {error}", file=sys.stderr)
+        return 1
+    path = write_mail_login(user, password)
+    print(f"Mail configured for {user}. Stored in {path}.")
+    return 0
+
+
+def mail_logout_command() -> int:
+    path = config.session_dir() / "mail.json"
+    if path.exists():
+        path.unlink()
+        print("Removed the stored Mail password.")
+    else:
+        print("No stored Mail password.")
+    print("The app-specific password stays valid until you revoke it at https://account.apple.com.")
     return 0

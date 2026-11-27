@@ -22,6 +22,8 @@ mcp-icloud-session/
 *.session
 *.cookiejar
 account.json
+mail.json
+mail.env
 
 # OS / editors
 .DS_Store
