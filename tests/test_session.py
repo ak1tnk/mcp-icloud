@@ -71,3 +71,15 @@ def test_other_errors(api_setup, stage, error):
     with pytest.raises(type(error)) as caught:
         session.load_api()
     assert caught.value is error
+
+
+def test_is_auth_error_ignores_rewritten_500() -> None:
+    from pyicloud.exceptions import PyiCloudAPIResponseException
+
+    from mcp_icloud.session import is_auth_error
+
+    assert is_auth_error(PyiCloudAPIResponseException("Authentication required for Account.", 409))
+    assert is_auth_error(PyiCloudAPIResponseException("x", "421"))
+    assert not is_auth_error(
+        PyiCloudAPIResponseException("Authentication required for Account.", 500)
+    )
