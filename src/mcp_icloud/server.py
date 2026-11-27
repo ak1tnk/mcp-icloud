@@ -11,7 +11,7 @@ from mcp.server.mcpserver.exceptions import ToolError
 from pyicloud import PyiCloudService
 from pyicloud.exceptions import PyiCloudException
 
-from mcp_icloud import config
+from mcp_icloud import agent_login, config
 from mcp_icloud.services import hidemyemail, mail
 from mcp_icloud.session import NotLoggedInError, is_auth_error, load_api
 
@@ -63,11 +63,16 @@ def build_server(provider: ApiProvider | None = None) -> MCPServer:
             "Manages iCloud Hide My Email addresses (hme_*: generating a candidate does not "
             "save it; there is no delete) and iCloud Mail (mail_*: trash moves to Trash; "
             "send, reply and forward send immediately)."
+            " If a tool reports the iCloud session is missing or expired and "
+            "MCP_ICLOUD_APPLE_ID and MCP_ICLOUD_APPLE_PASSWORD are set, call icloud_login_start, "
+            "ask the user for the 2FA code, then call icloud_login_verify. Never ask the user "
+            "for their Apple ID password in chat."
         ),
     )
     provider = provider or ApiProvider()
     hidemyemail.register(server, provider)
     mail.register(server, provider)
+    agent_login.register(server)
     return server
 
 

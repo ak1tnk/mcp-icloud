@@ -28,6 +28,7 @@ def _isolate(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     monkeypatch.setenv("MCP_ICLOUD_SESSION_DIR", str(session))
     monkeypatch.delenv("MCP_ICLOUD_APPLE_ID", raising=False)
     for name in (
+        "MCP_ICLOUD_APPLE_PASSWORD",
         "MCP_ICLOUD_MAIL_USER",
         "MCP_ICLOUD_MAIL_APP_PASSWORD",
         "MCP_ICLOUD_MAIL_FROM_ALIASES",

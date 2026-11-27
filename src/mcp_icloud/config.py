@@ -1,4 +1,7 @@
-"""Where the session lives and how it is protected. No secrets are read from env."""
+"""Where the session lives and how it is protected.
+
+The Apple ID password is read from env only by the agent login tools.
+"""
 
 from __future__ import annotations
 
@@ -9,6 +12,7 @@ from pathlib import Path
 
 SESSION_DIR_ENV = "MCP_ICLOUD_SESSION_DIR"
 APPLE_ID_ENV = "MCP_ICLOUD_APPLE_ID"
+PASSWORD_ENV = "MCP_ICLOUD_APPLE_PASSWORD"  # noqa: S105 - env var name, not a secret
 ACCOUNT_FILE = "account.json"
 
 
