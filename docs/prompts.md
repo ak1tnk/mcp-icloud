@@ -1,17 +1,45 @@
 # Prompts for agents
 
-Copy-paste prompts for using mcp-icloud with autonomous agents (for example agents running in a
-Linux VM). Each prompt is given in English, Japanese and Simplified Chinese. Replace placeholders
-such as `example-shop.com` with your own values. Never put passwords, 2FA codes or app-specific
-passwords in a prompt.
+Copy-paste prompts for using mcp-icloud with AI agents such as Claude Code, Codex, Grok, Muse and
+Qwen. Each prompt is given in English, Japanese and Simplified Chinese, and asks the agent to reply
+in that language. Replace placeholders such as `example-shop.com` with your own values. Never put
+passwords, 2FA codes or app-specific passwords in a prompt.
 
-- [A. Setup on a Linux VM](#a-setup-on-a-linux-vm)
-- [B. Everyday tasks](#b-everyday-tasks)
-- [C. System-prompt snippet for long-running agents](#c-system-prompt-snippet-for-long-running-agents)
+- [A. Setup](#a-setup)
+- [B. Setup when the agent runs on another machine](#b-setup-when-the-agent-runs-on-another-machine)
+- [C. Everyday tasks](#c-everyday-tasks)
+- [D. Standing instructions for long-running agents](#d-standing-instructions-for-long-running-agents)
 
 ---
 
-## A. Setup on a Linux VM
+## A. Setup
+
+**English**
+
+```
+Set up mcp-icloud by following these steps. Please reply to me in English.
+https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md
+```
+
+**日本語**
+
+```
+次の手順に従って mcp-icloud をセットアップしてください。やり取りは日本語でお願いします。
+https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md
+```
+
+**简体中文**
+
+```
+请按照以下步骤安装 mcp-icloud。请用简体中文和我交流。
+https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md
+```
+
+---
+
+## B. Setup when the agent runs on another machine
+
+For agents that run on a cloud computer or server (for example Grok, Muse or Qwen).
 
 **English**
 
@@ -22,6 +50,7 @@ Register it as an MCP server for yourself. Do not ask me for any password, 2FA c
 app-specific password in chat. When you reach the steps I must do myself, tell me exactly what to
 run: I will SSH into this machine and run `mcp-icloud login` there (and `mcp-icloud mail-login`
 only if I want the IMAP mail backend). Then check `mcp-icloud status` and report.
+Please reply to me in English.
 ```
 
 **日本語**
@@ -32,7 +61,7 @@ https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md の
 パスワード・2FA コード・App 用パスワードをチャットで聞かないでください。私がやるべき手順に来たら、
 実行するコマンドを正確に教えてください。私がこのマシンに SSH して `mcp-icloud login` を実行します
 （IMAP のメールバックエンドを使いたい場合だけ `mcp-icloud mail-login` も実行します）。
-最後に `mcp-icloud status` を確認して報告してください。
+最後に `mcp-icloud status` を確認して報告してください。やり取りは日本語でお願いします。
 ```
 
 **简体中文**
@@ -42,12 +71,12 @@ https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md の
 在这台机器上安装 mcp-icloud，并把它注册为你自己的 MCP 服务器。不要在聊天中向我索要任何密码、
 双重认证验证码或 App 专用密码。到了需要我亲自操作的步骤时，请准确告诉我要运行的命令：
 我会 SSH 登录这台机器，在那里运行 `mcp-icloud login`（只有在我想使用 IMAP 邮件后端时，
-才会再运行 `mcp-icloud mail-login`）。最后检查 `mcp-icloud status` 并向我报告。
+才会再运行 `mcp-icloud mail-login`）。最后检查 `mcp-icloud status` 并向我报告。请用简体中文和我交流。
 ```
 
 ---
 
-## B. Everyday tasks
+## C. Everyday tasks
 
 ### Create an address for a signup
 
@@ -56,20 +85,22 @@ https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md の
 ```
 Create a new Hide My Email address for signing up at example-shop.com. Label it
 "example-shop.com" and add the note "signup <today's date>". Tell me the address.
+Please reply in English.
 ```
 
 **日本語**
 
 ```
 example-shop.com の会員登録用に「メールを非公開」のアドレスを新しく作ってください。
-ラベルは「example-shop.com」、メモは「signup <今日の日付>」にして、アドレスを教えてください。
+ラベルは「example-shop.com」、メモは「会員登録 <今日の日付>」にして、アドレスを教えてください。
+日本語で答えてください。
 ```
 
 **简体中文**
 
 ```
 为在 example-shop.com 注册新建一个“隐藏邮件地址”。标签设为“example-shop.com”，
-备注写“signup <今天的日期>”，然后把地址告诉我。
+备注写“注册 <今天的日期>”，然后把地址告诉我。请用简体中文回答。
 ```
 
 ### List and deactivate addresses
@@ -78,7 +109,7 @@ example-shop.com の会員登録用に「メールを非公開」のアドレス
 
 ```
 List my Hide My Email addresses as a table (address, label, note, active). Then deactivate the
-one labelled "example-shop.com". Do not touch any other address.
+one labelled "example-shop.com". Do not touch any other address. Please reply in English.
 ```
 
 **日本語**
@@ -86,13 +117,14 @@ one labelled "example-shop.com". Do not touch any other address.
 ```
 「メールを非公開」のアドレスを表（アドレス・ラベル・メモ・有効/無効）で一覧してください。
 そのうえでラベルが「example-shop.com」のものだけを無効化してください。他のアドレスには触らないでください。
+日本語で答えてください。
 ```
 
 **简体中文**
 
 ```
 用表格列出我的“隐藏邮件地址”（地址、标签、备注、是否启用）。然后只停用标签为
-“example-shop.com”的那一个，不要改动其他地址。
+“example-shop.com”的那一个，不要改动其他地址。请用简体中文回答。
 ```
 
 ### Triage unread mail
@@ -102,7 +134,7 @@ one labelled "example-shop.com". Do not touch any other address.
 ```
 Look at my unread mail in INBOX from the last 3 days. Summarize each message in one line
 (sender, subject, what it wants from me). Don't mark anything read, don't move or reply to
-anything. Then suggest which ones to archive and wait for my answer.
+anything. Then suggest which ones to archive and wait for my answer. Please reply in English.
 ```
 
 **日本語**
@@ -110,14 +142,14 @@ anything. Then suggest which ones to archive and wait for my answer.
 ```
 INBOX の過去 3 日間の未読メールを確認し、1 通 1 行で要約してください（差出人・件名・私に求めていること）。
 既読にしたり、移動や返信をしたりはしないでください。そのうえでアーカイブしてよさそうなものを提案し、
-私の返事を待ってください。
+私の返事を待ってください。日本語で答えてください。
 ```
 
 **简体中文**
 
 ```
 查看 INBOX 中最近 3 天的未读邮件，每封用一行概括（发件人、主题、需要我做什么）。
-不要标记为已读，不要移动或回复任何邮件。然后建议哪些可以归档，并等待我的答复。
+不要标记为已读，不要移动或回复任何邮件。然后建议哪些可以归档，并等待我的答复。请用简体中文回答。
 ```
 
 ### Reply to a message
@@ -126,28 +158,28 @@ INBOX の過去 3 日間の未読メールを確認し、1 通 1 行で要約し
 
 ```
 Find the latest mail from billing@example.com and draft a reply saying I will pay by Friday.
-Show me the draft first; send it only after I say "send".
+Show me the draft first; send it only after I say "send". Please reply in English.
 ```
 
 **日本語**
 
 ```
 billing@example.com からの最新のメールを探して、「金曜日までに支払います」という返信の下書きを作ってください。
-まず下書きを見せて、私が「送信」と言ってから送ってください。
+まず下書きを見せて、私が「送信」と言ってから送ってください。日本語で答えてください。
 ```
 
 **简体中文**
 
 ```
 找到 billing@example.com 最新的一封邮件，起草一封回复，说明我会在周五前付款。
-先把草稿给我看，等我说“发送”之后再发送。
+先把草稿给我看，等我说“发送”之后再发送。请用简体中文回答。
 ```
 
 ---
 
-## C. System-prompt snippet for long-running agents
+## D. Standing instructions for long-running agents
 
-Add this to the agent's standing instructions. Edit the last rule to match your own send policy.
+Add this to the agent's standing instructions. Edit the send rule to match your own send policy.
 
 **English**
 
@@ -167,6 +199,7 @@ Rules:
 - Reserve, deactivate or reactivate addresses, and change mailboxes, only when asked.
 - Send mail only when the human asked for that specific message; if wording or recipients are
   unclear, save a draft and ask.
+- Reply to the human in English.
 ```
 
 **日本語**
@@ -185,6 +218,7 @@ Rules:
   `mcp-icloud mail-login` を実行するよう人間に伝え、回避しようとしない。
 - アドレスの予約・無効化・再有効化と、メールボックスの変更は頼まれたときだけ行う。
 - メールは人間がその内容の送信を頼んだときだけ送る。文面や宛先が曖昧なら下書きを保存して確認する。
+- 人間には日本語で返事をする。
 ```
 
 **简体中文**
@@ -202,4 +236,5 @@ Rules:
   请让人类在终端运行 `mcp-icloud login` 或 `mcp-icloud mail-login`，不要设法绕过。
 - 只有在被要求时才保留、停用或重新启用地址，以及修改邮箱。
 - 只有当人类要求发送那封具体的邮件时才发送；如果措辞或收件人不明确，先保存草稿并询问。
+- 用简体中文回复人类。
 ```

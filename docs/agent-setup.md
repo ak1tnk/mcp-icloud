@@ -8,6 +8,7 @@ and iCloud Mail (`mail_*`). Repository: <https://github.com/ak1tnk/mcp-icloud>.
 
 ## Hard rules
 
+- **Reply to the human in the language they used in their request.**
 - **Never ask the human to type a password, 2FA code or app-specific password into the chat**, and
   never accept one if they offer it: tell them to use the terminal command instead. If one is
   pasted anyway, do not repeat it, and tell them to revoke it at <https://account.apple.com>.

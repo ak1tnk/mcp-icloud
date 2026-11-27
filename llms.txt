@@ -7,7 +7,7 @@ Install: `uv tool install git+https://github.com/ak1tnk/mcp-icloud`. Server comm
 ## Docs
 
 - [Agent setup guide](https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/agent-setup.md): step-by-step install, registration, checks, upgrade and uninstall, written for an AI agent to follow, with hard safety rules
-- [README (English)](https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/README.md): features, configuration (environment variables), registering with MCP clients, Linux VMs, security, send policy
+- [README (English)](https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/README.md): what it does, the agent install prompt, manual install and registering with MCP clients, configuration (environment variables), using it on another machine, notes (send policy, revoking access, uninstall)
 - [Prompts](https://raw.githubusercontent.com/ak1tnk/mcp-icloud/main/docs/prompts.md): copy-paste prompts in English, Japanese and Chinese for setup, everyday tasks, and a system-prompt snippet
 
 ## Optional
