@@ -3,7 +3,14 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
-from pyicloud.exceptions import PyiCloudConnectionException, PyiCloudFailedLoginException
+from pyicloud.exceptions import (
+    PyiCloudAPIResponseException,
+    PyiCloudConnectionException,
+    PyiCloudFailedLoginException,
+    PyiCloudNoTrustedNumberAvailable,
+    PyiCloudTrustedDevicePromptException,
+    PyiCloudTrustedDeviceVerificationException,
+)
 
 from mcp_icloud import login
 from mcp_icloud.session import NotLoggedInError
@@ -16,6 +23,7 @@ def api_setup(monkeypatch):
         requires_2sa=False,
         fido2_devices=[],
         request_2fa_code=Mock(return_value=True),
+        use_existing_trusted_device_code=Mock(),
         two_factor_delivery_notice="Code sent.",
         validate_2fa_code=Mock(side_effect=[False, True]),
         is_trusted_session=False,
@@ -109,7 +117,8 @@ def test_status_error(monkeypatch, session_dir, capsys, kind):
     )
 
 
-def test_logout(session_dir, capsys):
+def test_logout(session_dir, capsys, monkeypatch):
+    monkeypatch.setattr(login, "load_api", Mock(side_effect=NotLoggedInError(session_dir)))
     session_dir.mkdir()
     for name in ["account.json", "a.session", "a.cookiejar", "keep.txt", "a.session.bak"]:
         (session_dir / name).write_text("example")
@@ -126,3 +135,79 @@ def test_logout(session_dir, capsys):
     assert "Removed 3" in capsys.readouterr().out
     assert login.logout_command() == 0
     assert "Removed 0" in capsys.readouterr().out
+
+
+def test_request_2fa_fallback(api_setup, capsys):
+    api, _ = api_setup
+    api.request_2fa_code.side_effect = PyiCloudAPIResponseException("x")
+    assert login.login_command("a@example.com") == 0
+    api.use_existing_trusted_device_code.assert_called_once_with()
+    assert api.validate_2fa_code.call_count == 2
+    assert (
+        "Could not request a 2FA code. If a trusted Apple device already shows a code, "
+        "enter it below."
+    ) in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "method,error,message",
+    [
+        (
+            "request_2fa_code",
+            PyiCloudConnectionException("x"),
+            "Could not reach Apple. Check the network and retry.",
+        ),
+        (
+            "request_2fa_code",
+            PyiCloudNoTrustedNumberAvailable(),
+            "Two-factor authentication needs a trusted phone number, but Apple returned none.",
+        ),
+        (
+            "request_2fa_code",
+            PyiCloudTrustedDevicePromptException("x"),
+            "Apple rejected the trusted-device 2FA step. Retry `mcp-icloud login`.",
+        ),
+        (
+            "validate_2fa_code",
+            PyiCloudTrustedDeviceVerificationException("x"),
+            "Apple rejected the trusted-device 2FA step. Retry `mcp-icloud login`.",
+        ),
+    ],
+)
+def test_2fa_errors(api_setup, session_dir, capsys, method, error, message):
+    api, _ = api_setup
+    getattr(api, method).side_effect = error
+    assert login.login_command("a@example.com") == 1
+    assert message in capsys.readouterr().err
+    api.use_existing_trusted_device_code.assert_not_called()
+    assert not (session_dir / "account.json").exists()
+
+
+@pytest.mark.parametrize("outcome", ["confirmed", "unconfirmed", "missing", "connection"])
+def test_remote_logout(monkeypatch, session_dir, capsys, outcome):
+    session_dir.mkdir()
+    for name in ["account.json", "a.session", "a.cookiejar"]:
+        (session_dir / name).write_text("example")
+    api = SimpleNamespace(
+        logout=Mock(return_value={"remote_logout_confirmed": outcome == "confirmed"})
+    )
+    loader = Mock(return_value=api)
+    if outcome == "missing":
+        loader.side_effect = NotLoggedInError(session_dir)
+    elif outcome == "connection":
+        api.logout.side_effect = PyiCloudConnectionException("x")
+    monkeypatch.setattr(login, "load_api", loader)
+    assert login.logout_command() == 0
+    loader.assert_called_once_with()
+    if outcome != "missing":
+        api.logout.assert_called_once_with()
+    assert list(session_dir.iterdir()) == []
+    output = capsys.readouterr().out
+    assert "Removed 3 local session files." in output
+    assert ("To revoke it at Apple" in output) == (outcome != "confirmed")
+    assert {
+        "confirmed": "Signed out of this session at Apple.",
+        "unconfirmed": "Apple did not confirm the sign-out.",
+        "missing": "No usable session; skipped signing out at Apple.",
+        "connection": "Could not reach Apple; skipped signing out at Apple.",
+    }[outcome] in output

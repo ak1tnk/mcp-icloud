@@ -1,4 +1,7 @@
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Barrier
+from time import sleep
 from unittest.mock import MagicMock
 
 import pytest
@@ -58,3 +61,34 @@ def test_other_exception_propagates():
     loader = MagicMock(side_effect=ValueError("unexpected"))
     with pytest.raises(ValueError, match="unexpected"):
         ApiProvider(loader).call(lambda api: api)
+
+
+def test_concurrent_calls_share_serialized_session():
+    api = object()
+    active = 0
+    barrier = Barrier(2)
+
+    def load():
+        sleep(0.03)
+        return api
+
+    loader = MagicMock(side_effect=load)
+    provider = ApiProvider(loader)
+
+    def use_session(session):
+        nonlocal active
+        assert session is api
+        active += 1
+        assert active == 1
+        sleep(0.03)
+        active -= 1
+        return "ok"
+
+    def call():
+        barrier.wait(timeout=5)
+        return provider.call(use_session)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(call) for _ in range(2)]
+        assert [future.result(timeout=5) for future in futures] == ["ok", "ok"]
+    loader.assert_called_once_with()
