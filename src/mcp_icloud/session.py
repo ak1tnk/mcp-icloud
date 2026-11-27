@@ -13,6 +13,8 @@ from pyicloud.exceptions import (
     PyiCloudFailedLoginException,
 )
 
+from mcp_icloud import config
+
 # Status codes Apple uses for an expired or untrusted web session (pyicloud may pass int or str).
 _AUTH_STATUS_CODES = {"401", "421", "450"}
 # pyicloud rewrites the reason to this for 409/421/450/500 auth failures.
@@ -58,4 +60,20 @@ def load_api() -> PyiCloudService:
 
     Raises NotLoggedInError when there is no usable session.
     """
-    raise NotImplementedError  # implemented in the auth slice
+    directory = config.session_dir()
+    apple_id = config.stored_apple_id(directory)
+    if apple_id is None:
+        raise NotLoggedInError(directory)
+    config.ensure_private_dir(directory)
+    try:
+        api = PyiCloudService(
+            apple_id, password=None, cookie_directory=str(directory), authenticate=False
+        )
+        api.authenticate()
+    except Exception as exc:
+        if is_auth_error(exc):
+            raise NotLoggedInError(directory) from exc
+        raise
+    if api.requires_2fa or api.requires_2sa or not api.is_trusted_session:
+        raise NotLoggedInError(directory)
+    return api
