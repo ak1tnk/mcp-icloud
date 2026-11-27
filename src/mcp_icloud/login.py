@@ -9,6 +9,7 @@ import smtplib
 import ssl
 import sys
 
+from mcp.server.mcpserver.exceptions import ToolError
 from pyicloud import PyiCloudService
 from pyicloud.exceptions import (
     PyiCloudAPIResponseException,
@@ -20,6 +21,7 @@ from pyicloud.exceptions import (
 )
 
 from mcp_icloud import config
+from mcp_icloud.services.mail.backend import selected_backend
 from mcp_icloud.services.mail.config import (
     IMAP_HOST,
     IMAP_PORT,
@@ -113,8 +115,7 @@ def login_command(apple_id: str | None) -> int:
 
 
 def status_command() -> int:
-    mail = configured_mail()
-    print(f"Mail: configured for {mail[0]} ({mail[1]})" if mail else "Mail: not configured")
+    print(_mail_status_line())
     try:
         api = load_api()
     except NotLoggedInError as exc:
@@ -157,6 +158,19 @@ def logout_command() -> int:
             "at https://account.apple.com."
         )
     return 0
+
+
+def _mail_status_line() -> str:
+    mail = configured_mail()
+    try:
+        backend = selected_backend()
+    except ToolError as exc:
+        return f"Mail: {exc}"
+    if backend == "web":
+        return "Mail: web backend (uses the mcp-icloud login session; experimental)"
+    if mail:
+        return f"Mail: IMAP backend, configured for {mail[0]} ({mail[1]})"
+    return "Mail: IMAP backend, not configured (run mcp-icloud mail-login)"
 
 
 def mail_login_command(user: str | None) -> int:

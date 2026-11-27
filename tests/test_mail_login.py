@@ -2,6 +2,7 @@ import imaplib
 import json
 import smtplib
 import stat
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import ANY, Mock, call
 
@@ -103,10 +104,25 @@ def test_mail_status(monkeypatch, session_dir, capsys, source, outcome):
         loader.side_effect = PyiCloudConnectionException("offline")
     monkeypatch.setattr(login, "load_api", loader)
     assert login.status_command() == (0 if outcome == "ok" else 1)
-    expected = "Mail: not configured"
+    expected = "Mail: web backend (uses the mcp-icloud login session; experimental)"
     if source != "none":
         location = "environment" if source == "environment" else str(session_dir / "mail.json")
-        expected = f"Mail: configured for {USER} ({location})"
+        expected = f"Mail: IMAP backend, configured for {USER} ({location})"
     output = capsys.readouterr()
     assert expected in output.out.splitlines()
     assert PASSWORD not in output.out + output.err
+
+
+@pytest.mark.parametrize(
+    "backend,expected",
+    [
+        ("imap", "Mail: IMAP backend, not configured (run mcp-icloud mail-login)"),
+        ("web", "Mail: web backend (uses the mcp-icloud login session; experimental)"),
+        ("bogus", "Mail: MCP_ICLOUD_MAIL_BACKEND must be auto, web or imap, not 'bogus'"),
+    ],
+)
+def test_status_mail_backend(monkeypatch, capsys, backend, expected):
+    monkeypatch.setenv("MCP_ICLOUD_MAIL_BACKEND", backend)
+    monkeypatch.setattr(login, "load_api", Mock(side_effect=NotLoggedInError(Path("/x"))))
+    login.status_command()
+    assert expected in capsys.readouterr().out.splitlines()
